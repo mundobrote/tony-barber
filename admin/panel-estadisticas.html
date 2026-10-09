@@ -36,6 +36,9 @@
       </h5>
     </div>
     <div class="d-flex align-items-center gap-3">
+      <a href="panel-turnos.html" class="btn btn-outline-warning btn-sm">
+        <i class="bi bi-calendar3 me-1"></i> Ver Calendario de Turnos
+      </a>
       <span class="badge bg-dark border border-warning text-warning px-3 py-2">Administrador</span>
       <button class="btn btn-outline-danger btn-sm" onclick="cerrarSesion()">Cerrar Sesión</button>
     </div>
@@ -134,7 +137,7 @@
   <!-- Modal para Agregar / Editar Servicio -->
   <div class="modal fade" id="modalServicio" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content modal-content-lux p-3 text-white">
+      <div class="modal-content bg-dark border border-warning p-3 text-white" style="border-radius: 12px;">
         <div class="modal-header border-0">
           <h5 class="modal-title fw-bold text-warning" id="modalServicioTitulo">Añadir Servicio</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -142,17 +145,17 @@
         <div class="modal-body">
           <input type="hidden" id="servicioId">
           <div class="mb-3">
-            <label class="label-lux">Nombre del Servicio</label>
-            <input type="text" id="servicioNombre" class="input-lux" placeholder="Ej. Corte Clásico + Barboterapia" required>
+            <label class="form-label text-white small fw-bold text-uppercase">Nombre del Servicio</label>
+            <input type="text" id="servicioNombre" class="form-control bg-secondary text-white border-0" placeholder="Ej. Corte Clásico + Barboterapia" required>
           </div>
           <div class="mb-3">
-            <label class="label-lux">Precio ($ CLP)</label>
-            <input type="number" id="servicioPrecio" class="input-lux" placeholder="Ej. 12000" required>
+            <label class="form-label text-white small fw-bold text-uppercase">Precio ($ CLP)</label>
+            <input type="number" id="servicioPrecio" class="form-control bg-secondary text-white border-0" placeholder="Ej. 12000" required>
           </div>
         </div>
         <div class="modal-footer border-0">
-          <button type="button" class="btn btn-lux-outline" data-bs-dismiss="modal">Cancelar</button>
-          <button type="button" class="btn btn-lux-primary" onclick="guardarServicio()">Guardar Cambios</button>
+          <button type="button" class="btn btn-outline-light btn-sm" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-warning fw-bold px-4" onclick="guardarServicio()">Guardar Cambios</button>
         </div>
       </div>
     </div>
@@ -184,7 +187,7 @@
       tbody.innerHTML = "";
       document.getElementById("totalServiciosCount").textContent = servicios.length;
 
-      servicios.forEach((s, index) => {
+      servicios.forEach((s) => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td><span class="text-white-50">#${s.id}</span></td>
@@ -237,10 +240,8 @@
       let servicios = obtenerServicios();
 
       if (id) {
-        // Editar existente
         servicios = servicios.map(s => s.id == id ? { ...s, tipo, precio } : s);
       } else {
-        // Crear nuevo
         const nuevoId = servicios.length > 0 ? Math.max(...servicios.map(s => s.id)) + 1 : 1;
         servicios.push({ id: nuevoId, tipo, precio });
       }
@@ -276,8 +277,10 @@
         const precio = t.servicio?.precio || 0;
         ingresos += precio;
         const tr = document.createElement("tr");
+        
+        let fechaFormateada = t.fechaHora ? t.fechaHora.replace("T", " — ") : "—";
         tr.innerHTML = `
-          <td><span class="text-warning fw-bold">${t.fechaHora?.replace("T", " — ") || "—"}</span></td>
+          <td><span class="text-warning fw-bold">${fechaFormateada}</span></td>
           <td>${t.cliente?.nombre || ""} ${t.cliente?.apellido || ""}</td>
           <td>${t.cliente?.telefono || "—"}</td>
           <td>${t.servicio?.tipo || "—"}</td>
@@ -298,6 +301,7 @@
     }
 
     function cerrarSesion() {
+      localStorage.removeItem("admin_sesion_activa");
       window.location.href = "login.html";
     }
 
