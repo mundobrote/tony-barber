@@ -21,23 +21,34 @@
 </head>
 
 <body>
-  <div class="d-flex justify-content-center mb-3">
+  <div class="d-flex justify-content-center mb-3 pt-4">
     <a href="index.html">
       <img src="./img/logo.svg" alt="Logo de TH Barber Club" style="max-width: 150px;" />
     </a>
   </div>
-  <div class="container py-5 text-center">      
+  <div class="container py-3 text-center">      
       <!-- Ilustración -->
-      <div class="mb-4">
+      <div class="mb-3">
         <img src="./img/ok.svg"
              alt="Reserva confirmada exitosamente"
              class="img-fluid"
-             style="max-width: 180px; box-shadow: 0 4px 24px rgba(0,0,0,0.15); animation: pop 0.7s;">
+             style="max-width: 160px; box-shadow: 0 4px 24px rgba(0,0,0,0.15); animation: pop 0.7s;">
       </div>
 
       <!-- Mensaje principal -->
-      <h1 class="fw-bold mb-3">¡Tu reserva está confirmada!</h1>
-      <p class="lead mb-4">Gracias por elegirnos. Pronto nos estaremos viendo en el sillón. 💈</p>
+      <h1 class="fw-bold mb-2">¡Tu reserva está confirmada!</h1>
+      <p class="lead mb-3">Gracias por elegirnos. Pronto nos estaremos viendo en el sillón. 💈</p>
+
+      <!-- Resumen del Turno Registrado -->
+      <div class="card bg-dark border border-warning mx-auto mb-4 text-start p-3" style="max-width: 450px; border-radius: 12px;">
+        <h5 class="text-warning text-center mb-3 border-bottom border-secondary pb-2">📋 Detalle de tu Turno</h5>
+        <div id="detalle-reserva" class="text-white small">
+          <p class="mb-2"><strong>Cliente:</strong> <span id="res-cliente">—</span></p>
+          <p class="mb-2"><strong>Servicio:</strong> <span id="res-servicio">—</span></p>
+          <p class="mb-2"><strong>Fecha y Hora:</strong> <span id="res-fechahora">—</span></p>
+          <p class="mb-0"><strong>Total a Pagar:</strong> <span id="res-precio" class="text-warning fw-bold">—</span></p>
+        </div>
+      </div>
 
       <!-- Acciones -->
       <div class="d-flex flex-column flex-sm-row justify-content-center gap-3 mb-5">
@@ -54,30 +65,30 @@
       <!-- Info adicional -->
       <div class="row text-center border-top border-secondary pt-4">
         <div class="col-12 col-md-4 mb-3 d-flex justify-content-center">
-          <div class="card" style="width: 18rem;">
-        <div class="card-body">
-          <h5 class="card-title text-warning">📍 Ubicación</h5>
-          <h6 class="card-subtitle mb-2 text-body-secondary">Humboldt, Santa Fe</h6>
-          <p class="card-text text-muted small mb-0">Nuestra barbería está ubicada en Humboldt, Santa Fe.</p>
-        </div>
+          <div class="card bg-dark border-secondary" style="width: 18rem;">
+            <div class="card-body">
+              <h5 class="card-title text-warning">📍 Ubicación</h5>
+              <h6 class="card-subtitle mb-2 text-body-secondary">Humboldt, Santa Fe</h6>
+              <p class="card-text text-muted small mb-0">Nuestra barbería está ubicada en Humboldt, Santa Fe.</p>
+            </div>
           </div>
         </div>
         <div class="col-12 col-md-4 mb-3 d-flex justify-content-center">
-          <div class="card" style="width: 18rem;">
-        <div class="card-body">
-          <h5 class="card-title text-warning">⏰ Puntualidad</h5>
-          <h6 class="card-subtitle mb-2 text-body-secondary">Llegá al menos 5 minutos antes</h6>
-          <p class="card-text text-muted small mb-0">Te recomendamos llegar unos minutos antes de tu turno.</p>
-        </div>
+          <div class="card bg-dark border-secondary" style="width: 18rem;">
+            <div class="card-body">
+              <h5 class="card-title text-warning">⏰ Puntualidad</h5>
+              <h6 class="card-subtitle mb-2 text-body-secondary">Llegá al menos 5 minutos antes</h6>
+              <p class="card-text text-muted small mb-0">Te recomendamos llegar unos minutos antes de tu turno.</p>
+            </div>
           </div>
         </div>
         <div class="col-12 col-md-4 mb-3 d-flex justify-content-center">
-          <div class="card" style="width: 18rem;">
-        <div class="card-body">
-          <h5 class="card-title text-warning">💳 Métodos de pago</h5>
-          <h6 class="card-subtitle mb-2 text-body-secondary">Efectivo, tarjeta o transferencia</h6>
-          <p class="card-text text-muted small mb-0">Aceptamos efectivo, tarjeta y transferencia.</p>
-        </div>
+          <div class="card bg-dark border-secondary" style="width: 18rem;">
+            <div class="card-body">
+              <h5 class="card-title text-warning">💳 Métodos de pago</h5>
+              <h6 class="card-subtitle mb-2 text-body-secondary">Efectivo, tarjeta o transferencia</h6>
+              <p class="card-text text-muted small mb-0">Aceptamos efectivo, tarjeta y transferencia.</p>
+            </div>
           </div>
         </div>
       </div>
@@ -88,5 +99,29 @@
       </div>
   </div>
 
+  <!-- Script para rellenar los datos de la última reserva -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      const turnos = JSON.parse(localStorage.getItem("turnos_barberia") || "[]");
+      if (turnos.length > 0) {
+        // Tomar el último turno registrado
+        const ultimoTurno = turnos[turnos.length - 1];
+
+        document.getElementById("res-cliente").textContent = `${ultimoTurno.cliente?.nombre || ""} ${ultimoTurno.cliente?.apellido || ""}`;
+        document.getElementById("res-servicio").textContent = ultimoTurno.servicio?.tipo || "Servicio general";
+        
+        // Formatear fecha y hora
+        if (ultimoTurno.fechaHora) {
+          const [fecha, hora] = ultimoTurno.fechaHora.split("T");
+          const partesFecha = fecha.split("-");
+          const fechaFormateada = partesFecha.length === 3 ? `${partesFecha[2]}/${partesFecha[1]}/${partesFecha[0]}` : fecha;
+          document.getElementById("res-fechahora").textContent = `${fechaFormateada} a las ${hora || ""}`;
+        }
+
+        const precio = ultimoTurno.servicio?.precio || 0;
+        document.getElementById("res-precio").textContent = `$${Number(precio).toLocaleString("es-CL")}`;
+      }
+    });
+  </script>
 </body>
 </html>
