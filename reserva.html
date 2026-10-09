@@ -7,6 +7,48 @@
   <link rel="icon" href="./img/logo.svg" type="image/x-icon" />
   <link rel="stylesheet" href="./css/styles.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" />
+  <style>
+    /* Estilos para las tarjetas de selección de barberos */
+    .barberos-grid {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 10px;
+    }
+    .barbero-option {
+      background: rgba(15, 15, 15, 0.65);
+      border: 1.5px solid rgba(211, 84, 0, 0.28);
+      border-radius: 10px;
+      padding: 10px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      width: 105px;
+    }
+    .barbero-option input[type="radio"] {
+      display: none;
+    }
+    .barbero-option img {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 2px solid #c57d38;
+      margin-bottom: 6px;
+    }
+    .barbero-option span {
+      font-size: 0.78rem;
+      color: #fff;
+      font-weight: 600;
+      display: block;
+    }
+    .barbero-option.selected, .barbero-option:hover {
+      border-color: #e09858;
+      background: rgba(197, 125, 56, 0.2);
+      transform: translateY(-2px);
+    }
+  </style>
 </head>
 <body class="page-booking">
 
@@ -35,25 +77,34 @@
         </a>
         <div class="tag-pill">Agenda Online</div>
         <h1 class="card-title">¡Reserva tu turno!</h1>
-        <p class="card-subtitle">Selecciona el servicio y horario de tu preferencia.</p>
+        <p class="card-subtitle">Selecciona el barbero, servicio y horario de tu preferencia.</p>
       </div>
 
       <!-- Formulario Multi-pasos -->
       <form id="form-turno" autocomplete="off" onsubmit="return false;">
         
-        <!-- ===== PASO 1: SERVICIO ===== -->
+        <!-- ===== PASO 1: BARBERO Y SERVICIO ===== -->
         <div class="seccion activa form-step" id="paso-1">
+          
+          <!-- Selección de Barbero con Fotos -->
+          <div class="form-group-lux mb-3">
+            <label class="label-lux">Elige a tu Barbero *</label>
+            <div id="barberos-container" class="barberos-grid">
+              <!-- Se cargará dinámicamente -->
+            </div>
+          </div>
+
           <div class="form-group-lux">
             <label for="servicio" class="label-lux">Servicio *</label>
             <div class="select-wrapper">
               <select class="input-lux select-lux" id="servicio" required>
                 <option value="">-- Selecciona un servicio --</option>
-                <!-- Se cargará dinámicamente desde el panel de administración -->
+                <!-- Se cargará dinámicamente desde el panel -->
               </select>
             </div>
           </div>
           
-          <button type="button" class="btn-lux-primary w-100" onclick="siguientePaso(1)">
+          <button type="button" class="btn-lux-primary w-100 mt-2" onclick="siguientePaso(1)">
             Siguiente <i class="bi bi-arrow-right ms-1"></i>
           </button>
         </div>
@@ -110,7 +161,7 @@
             <button type="button" class="btn-lux-outline" onclick="volverPaso(2)">
               <i class="bi bi-arrow-left me-1"></i> Atrás
             </button>
-            <button type="button" class="btn-lux-primary flex-1" onclick="enviarForm()">
+            <button type="button" class="btn-lux-primary flex-1" onclick="enviarFormBarber()">
               Confirmar Reserva <i class="bi bi-check2-circle ms-1"></i>
             </button>
           </div>
@@ -122,36 +173,109 @@
 
   <script src="./js/scripts.js"></script>
   <script>
-    // Cargar servicios dinámicamente desde el localStorage compartido con el panel
     document.addEventListener("DOMContentLoaded", function() {
-      const selectServicio = document.getElementById("servicio");
-      if (!selectServicio) return;
-
-      const SERVICIOS_DEFAULT = [
-        { id: 1, tipo: "Corte Clásico / Tradicional", precio: 10000 },
-        { id: 2, tipo: "Perfilado & Afeitado de Barba", precio: 7000 },
-        { id: 3, tipo: "Combo Corte + Barba Completo", precio: 15000 },
-        { id: 4, tipo: "Corte Infantil / Escolar", precio: 8000 },
-        { id: 5, tipo: "Tintura / Camuflaje de Canas", precio: 18000 },
-        { id: 6, tipo: "Corte VIP a Domicilio", precio: 25000 }
+      // 1. Cargar Barberos con fotos
+      const BARBEROS_DEFAULT = [
+        { id: 1, nombre: "Tony", foto: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150" },
+        { id: 2, nombre: "Lucas", foto: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150" },
+        { id: 3, nombre: "Matías", foto: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150" },
+        { id: 4, nombre: "Diego", foto: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150" }
       ];
 
-      let servicios = JSON.parse(localStorage.getItem("servicios_barberia"));
-      if (!servicios || servicios.length === 0) {
-        servicios = SERVICIOS_DEFAULT;
-        localStorage.setItem("servicios_barberia", JSON.stringify(servicios));
+      let barberos = JSON.parse(localStorage.getItem("barberos_barberia"));
+      if (!barberos || barberos.length === 0) {
+        barberos = BARBEROS_DEFAULT;
+        localStorage.setItem("barberos_barberia", JSON.stringify(barberos));
       }
 
-      // Limpiar y poblar el select
-      selectServicio.innerHTML = '<option value="">-- Selecciona un servicio --</option>';
-      servicios.forEach(s => {
-        const option = document.createElement("option");
-        option.value = s.id;
-        option.setAttribute("data-precio", s.precio);
-        option.textContent = `${s.tipo} — $${Number(s.precio).toLocaleString("es-CL")}`;
-        selectServicio.appendChild(option);
-      });
+      const contenedorBarberos = document.getElementById("barberos-container");
+      if (contenedorBarberos) {
+        contenedorBarberos.innerHTML = "";
+        barberos.forEach((b, index) => {
+          const label = document.createElement("label");
+          label.className = `barbero-option ${index === 0 ? 'selected' : ''}`;
+          label.innerHTML = `
+            <input type="radio" name="barbero" value="${b.nombre}" ${index === 0 ? 'checked' : ''} />
+            <img src="${b.foto}" alt="${b.nombre}" />
+            <span>${b.nombre}</span>
+          `;
+          label.onclick = () => {
+            document.querySelectorAll(".barbero-option").forEach(el => el.classList.remove("selected"));
+            label.classList.add("selected");
+            label.querySelector("input").checked = true;
+          };
+          contenedorBarberos.appendChild(label);
+        });
+      }
+
+      // 2. Cargar Servicios y Precios dinámicos
+      const selectServicio = document.getElementById("servicio");
+      if (selectServicio) {
+        const SERVICIOS_DEFAULT = [
+          { id: 1, tipo: "Corte Clásico / Tradicional", precio: 10000 },
+          { id: 2, tipo: "Perfilado & Afeitado de Barba", precio: 7000 },
+          { id: 3, tipo: "Combo Corte + Barba Completo", precio: 15000 },
+          { id: 4, tipo: "Corte Infantil / Escolar", precio: 8000 },
+          { id: 5, tipo: "Tintura / Camuflaje de Canas", precio: 18000 },
+          { id: 6, tipo: "Corte VIP a Domicilio", precio: 25000 }
+        ];
+
+        let servicios = JSON.parse(localStorage.getItem("servicios_barberia"));
+        if (!servicios || servicios.length === 0) {
+          servicios = SERVICIOS_DEFAULT;
+          localStorage.setItem("servicios_barberia", JSON.stringify(servicios));
+        }
+
+        selectServicio.innerHTML = '<option value="">-- Selecciona un servicio --</option>';
+        servicios.forEach(s => {
+          const option = document.createElement("option");
+          option.value = s.id;
+          option.setAttribute("data-precio", s.precio);
+          option.textContent = `${s.tipo} — $${Number(s.precio).toLocaleString("es-CL")}`;
+          selectServicio.appendChild(option);
+        });
+      }
     });
+
+    // Función personalizada para enviar incluyendo el barbero seleccionado
+    window.enviarFormBarber = function() {
+      const barberoRadio = document.querySelector('input[name="barbero"]:checked');
+      const nombre = document.getElementById("nombre").value.trim();
+      const apellido = document.getElementById("apellido").value.trim();
+      const telefono = document.getElementById("telefono").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const selectServicio = document.getElementById("servicio");
+      const servicioId = parseInt(selectServicio.value);
+      const fecha = document.getElementById("fecha").value;
+      const hora = document.querySelector(".input-opcion.selected")?.textContent || "";
+
+      if (!barberoRadio || !nombre || !apellido || !telefono || !email || !fecha || !hora || !servicioId) {
+        alert("Por favor, completa todos los campos, selecciona un barbero y un horario.");
+        return;
+      }
+
+      const barberoElegido = barberoRadio.value;
+      const servicioObj = {
+        id: servicioId,
+        tipo: selectServicio.selectedOptions[0].text.split(" — ")[0],
+        precio: parseFloat(selectServicio.selectedOptions[0].dataset.precio || 0)
+      };
+
+      const turnoData = {
+        id: Date.now(),
+        fechaHora: `${fecha}T${hora}`,
+        cliente: { nombre, apellido, telefono, email },
+        servicio: servicioObj,
+        barbero: barberoElegido,
+        estado: "confirmado"
+      };
+
+      const citas = JSON.parse(localStorage.getItem("turnos_barberia") || "[]");
+      citas.push(turnoData);
+      localStorage.setItem("turnos_barberia", JSON.stringify(citas));
+
+      window.location.href = "reserva-confirmada.html";
+    };
   </script>
 </body>
 </html>
