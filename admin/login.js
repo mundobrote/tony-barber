@@ -50,6 +50,8 @@ document.addEventListener("DOMContentLoaded", function () {
     setTimeout(() => {
       // Verificación de credenciales
       if (email === "manzana@gmail.com" && contrasenia === "manzana") {
+        // Guardar sesión activa en localStorage
+        localStorage.setItem("admin_sesion_activa", "true");
         window.location.href = "./panel-estadisticas.html";
       } else {
         alert("Credenciales incorrectas.\n\nCorreo: manzana@gmail.com\nContraseña: manzana");
