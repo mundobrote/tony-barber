@@ -1,3 +1,10 @@
+// Configuración de Supabase con tus credenciales
+const SUPABASE_URL = "https://qxyilgtswpvfolavuqde.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF4eWlsZ3Rzd3B2Zm9sYXZ1cWRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAxMjU4MjAsImV4cCI6MjEwNTcwMTgyMH0.qCvuLeJA53O5ykdWTGvZzPKOZs5zWqTg3JgoxsxyiuM";
+
+// Inicializar cliente de Supabase (requiere que el script de supabase esté cargado en el HTML o se importe)
+const mbDb = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
 // Horarios estándar
 const HORARIOS_LABORALES = [
   "10:00", "11:00", "12:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00"
@@ -98,8 +105,8 @@ window.volverPaso = function (paso) {
   pasoActual = paso - 1;
 };
 
-// Enviar formulario
-window.enviarForm = function () {
+// Enviar formulario conectado a Supabase
+window.enviarForm = async function () {
   const nombre = document.getElementById("nombre").value.trim();
   const apellido = document.getElementById("apellido").value.trim();
   const telefono = document.getElementById("telefono").value.trim();
@@ -127,13 +134,35 @@ window.enviarForm = function () {
   data.cliente = { nombre, apellido, telefono, email };
   data.servicio = {
     id: servicioId,
-    tipo: selectServicio.selectedOptions[0].text,
+    tipo: selectServicio.selectedOptions[0].text.split(" — ")[0],
     precio: parseFloat(selectServicio.selectedOptions[0].dataset.precio || 0)
   };
 
-  const citas = JSON.parse(localStorage.getItem("turnos_barberia") || "[]");
-  citas.push({ id: Date.now(), ...data, estado: "confirmado" });
-  localStorage.setItem("turnos_barberia", JSON.stringify(citas));
+  const nuevoTurno = {
+    fecha_hora: data.fechaHora,
+    nombre: data.cliente.nombre,
+    apellido: data.cliente.apellido,
+    telefono: data.cliente.telefono,
+    email: data.cliente.email,
+    servicio_tipo: data.servicio.tipo,
+    precio: data.servicio.precio,
+    estado: "confirmado"
+  };
 
-  window.location.href = "reserva-confirmada.html";
+  try {
+    if (mbDb) {
+      const { error } = await mbDb.from('turnos').insert([nuevoTurno]);
+      if (error) throw error;
+    }
+    
+    // Respaldo dual en localStorage por seguridad local
+    const citas = JSON.parse(localStorage.getItem("turnos_barberia") || "[]");
+    citas.push({ id: Date.now(), ...data, estado: "confirmado" });
+    localStorage.setItem("turnos_barberia", JSON.stringify(citas));
+
+    window.location.href = "reserva-confirmada.html";
+  } catch (err) {
+    console.error("Error al guardar en Supabase:", err);
+    mostrarError("Hubo un error al registrar el turno en la nube. Inténtalo nuevamente.");
+  }
 };
