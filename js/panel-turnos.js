@@ -1,126 +1,58 @@
-import { ENDPOINTS, HORARIOS_LABORALES } from "./config.js";
+import { HORARIOS_LABORALES } from "./config.js";
 
-// Llamadas a la API
+// Inicialización de Supabase con tus credenciales
+const SUPABASE_URL = "https://qxyilgtswpvfolavuqde.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF4eWlsZ3Rzd3B2Zm9sYXZ1cWRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAxMjU4MjAsImV4cCI6MjEwNTcwMTgyMH0.qCvuLeJA53O5ykdWTGvZzPKOZs5zWqTg3JgoxsxyiuM";
+const mbDb = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+// Conexión directa a Supabase a través de ApiService
 class ApiService {
-    constructor() {
-        this.defaultHeaders = {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-        };
-    }
+    constructor() {}
 
-    async makeRequest(url, options = {}) {
-        try {
-            const config = {
-                headers: this.defaultHeaders,
-                ...options
-            };
-
-            const response = await fetch(url, config);
-            
-            // Manejar diferentes tipos de respuesta según el código de estado
-            switch (response.status) {
-                case 200: // OK - Respuesta con datos
-                    return await response.json();
-                    
-                case 201: // CREATED - Recurso creado (sin datos en el body según tu backend)
-                    return { success: true, status: 201, message: 'Resource created' };
-                    
-                case 204: // NO CONTENT - Operación exitosa sin datos
-                    return { success: true, status: 204, message: 'Operation completed successfully' };
-                    
-                case 404: // NOT FOUND
-                    throw new Error(`Resource not found (404)`);
-                    
-                case 400: // BAD REQUEST
-                    let errorMessage = 'Bad request';
-                    try {
-                        const errorData = await response.json();
-                        errorMessage = errorData.message || errorData.error || errorMessage;
-                    } catch (e) {
-                        // Si no puede parsear el error como JSON, usar mensaje genérico
-                    }
-                    throw new Error(`Bad request (400): ${errorMessage}`);
-                    
-                case 500: // INTERNAL SERVER ERROR
-                    throw new Error(`Internal server error (500)`);
-                    
-                default:
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    
-                    // Para otros códigos exitosos, intentar parsear JSON
-                    const contentType = response.headers.get('content-type');
-                    if (contentType && contentType.includes('application/json')) {
-                        return await response.json();
-                    }
-                    
-                    return await response.text();
-            }
-            
-        } catch (error) {
-            console.error('API Error:', error);
-            throw error;
-        }
-    }
-
-    // GET - Obtener todos los turnos
     async getTurnos() {
-        return this.makeRequest(ENDPOINTS.turnos);
+        if (!mbDb) return JSON.parse(localStorage.getItem("turnos_barberia") || "[]");
+        const { data, error } = await mbDb.from('turnos').select('*');
+        if (error) {
+            console.error('Error al obtener turnos de Supabase:', error);
+            return [];
+        }
+        return data.map(t => ({
+            id: t.id,
+            fechaHora: t.fecha_hora || t.fechaHora,
+            cliente: t.cliente || { nombre: t.nombre, apellido: t.apellido, telefono: t.telefono, email: t.email },
+            servicio: t.servicio || { tipo: t.servicio_tipo, precio: t.precio },
+            estado: t.estado || 'confirmado'
+        }));
     }
 
-    // GET - Obtener turno por ID
-    async getTurnoById(id) {
-        return this.makeRequest(`${ENDPOINTS.turnos}/${id}`);
-    }
-    
-    // GET con paginación
-    async getTurnosPaginated(page = 0, size = 10) {
-        return this.makeRequest(`${ENDPOINTS.turnos}?page=${page}&size=${size}`);
-    }
-
-    // GET - Obtener fechas ocupadas
     async getOccupiedDates() {
-        return this.makeRequest(`${ENDPOINTS.turnos}/findDateTimes`);
+        const turnos = await this.getTurnos();
+        return turnos.map(t => t.fechaHora);
     }
 
-    // GET - Obtener Servicios
-    async getServicios() {
-        return this.makeRequest(ENDPOINTS.servicios);
-    }
-
-    // POST - Crear nuevo turno
-    async createTurno(turnoData) {
-        return this.makeRequest(ENDPOINTS.turnos, {
-            method: 'POST',
-            body: JSON.stringify(turnoData)
-        });
-    }
-
-    // PUT - Actualizar turno completo
-    async updateTurno(id, turnoData) {
-        return this.makeRequest(`${ENDPOINTS.turnos}/${id}`, {
-            method: 'PUT',
-            body: JSON.stringify(turnoData)
-        });
-    }
-
-    // PATCH - Actualización parcial
     async patchTurno(id, partialData) {
-        return this.makeRequest(`${ENDPOINTS.turnos}/${id}`, {
-            method: 'PATCH',
-            body: JSON.stringify(partialData)
-        });
+        if (!mbDb) return { success: true };
+        const payload = {
+            fecha_hora: partialData.fechaHora,
+            nombre: partialData.cliente?.nombre,
+            apellido: partialData.cliente?.apellido,
+            telefono: partialData.cliente?.telefono,
+            email: partialData.cliente?.email,
+            servicio_tipo: partialData.servicio?.tipo,
+            precio: partialData.servicio?.precio,
+            estado: partialData.estado
+        };
+        const { error } = await mbDb.from('turnos').update(payload).eq('id', id);
+        if (error) throw error;
+        return { success: true };
     }
 
-    // DELETE - Eliminar turno
     async deleteTurno(id) {
-        return this.makeRequest(`${ENDPOINTS.turnos}/${id}`, {
-            method: 'DELETE'
-        });
+        if (!mbDb) return { success: true };
+        const { error } = await mbDb.from('turnos').delete().eq('id', id);
+        if (error) throw error;
+        return { success: true };
     }
-
 }
 
 // turno.model.js - Modelo y utilidades para turnos
@@ -132,37 +64,19 @@ class TurnoModel {
         this.servicio = data.servicio || {};
     }
 
-    // Convertir datos de la API al formato usado en la interfaz
     static fromApiResponse(apiData) {
         return {
             id: apiData.id,
             fecha: this.extractDate(apiData.fechaHora),
             hora: this.extractTime(apiData.fechaHora),
             cliente: this.getClienteName(apiData.cliente),
+            nombre: apiData.cliente?.nombre || '',
+            apellido: apiData.cliente?.apellido || '',
             telefono: apiData.cliente?.telefono || '',
             email: apiData.cliente?.email || '',
             servicio: apiData.servicio?.tipo || '',
-            estado: 'confirmado', // Por defecto, ya que la API no maneja estados
+            estado: apiData.estado || 'confirmado',
             precio: apiData.servicio?.precio || 0
-        };
-    }
-
-    // Convertir datos de la interfaz al formato de la API
-    static toApiFormat(uiData) {
-        return {
-            id: uiData.id,
-            fechaHora: `${uiData.fecha}T${uiData.hora}:00`,
-            cliente: {
-                nombre: uiData.nombre || null,
-                apellido: uiData.apellido || null,
-                email: null,
-                telefono: uiData.telefono || null
-            },
-            servicio: {
-                id: parseInt(uiData.servicioId),
-                tipo: uiData.servicio,
-                precio: parseFloat(uiData.precio || 0)
-            }
         };
     }
 
@@ -184,31 +98,32 @@ class TurnoModel {
     }
 }
 
-
 // Manejo mejorado de notificaciones con toast
-    class NotificationService {
-      static show(message, type = 'success') {
+class NotificationService {
+    static show(message, type = 'success') {
         const toast = document.getElementById('notificationToast');
         const toastMessage = document.getElementById('toastMessage');
         
         if (toast && toastMessage) {
-          toastMessage.textContent = message;
-          toast.className = `toast ${type === 'success' ? 'bg-success' : 'bg-danger'} text-white`;
-          
-          const toastBootstrap = new bootstrap.Toast(toast);
-          toastBootstrap.show();
+            toastMessage.textContent = message;
+            toast.className = `toast ${type === 'success' ? 'bg-success' : 'bg-danger'} text-white show`;
+            
+            setTimeout(() => {
+                toast.className = 'toast d-none';
+            }, 3000);
+        } else {
+            alert(message);
         }
-      }
+    }
 
-      static showError(message) {
+    static showError(message) {
         this.show(message, 'error');
-      }
     }
+}
 
-    // Reemplazar la clase NotificationService original
-    if (typeof window !== 'undefined') {
-      window.NotificationService = NotificationService;
-    }
+if (typeof window !== 'undefined') {
+    window.NotificationService = NotificationService;
+}
 
 // main.js - Lógica principal de la aplicación
 class TurnosManager {
@@ -217,16 +132,17 @@ class TurnosManager {
         this.turnosData = [];
         
         this.serviciosDisponibles = [
-            { id: 1, nombre: 'Corte de pelo', precio: 1500, tipo: 'Corte de pelo' },
-            { id: 2, nombre: 'Tintura', precio: 3000, tipo: 'Tintura' },
-            { id: 3, nombre: 'Perfilado de barba', precio: 2000, tipo: 'Perfilado de barba' }
+            { id: 1, nombre: 'Corte Clásico / Tradicional', precio: 10000, tipo: 'Corte Clásico / Tradicional' },
+            { id: 2, nombre: 'Perfilado & Afeitado de Barba', precio: 7000, tipo: 'Perfilado & Afeitado de Barba' },
+            { id: 3, nombre: 'Combo Corte + Barba Completo', precio: 15000, tipo: 'Combo Corte + Barba Completo' }
         ];
         
         this.horariosDisponibles = HORARIOS_LABORALES;
-
         this.fechaActualCalendario = new Date();
         this.turnoSeleccionado = null;
         this.vistaActual = 'lista';
+        this.sortDirection = 'asc';
+        this.sortColumn = 'fecha';
 
         this.init();
     }
@@ -251,7 +167,6 @@ class TurnosManager {
             this.turnosData = apiTurnos.map(turno => TurnoModel.fromApiResponse(turno));
         } catch (error) {
             console.error('Error al cargar turnos:', error);
-            // Usar datos de respaldo o mostrar error
             this.turnosData = [];
             throw error;
         }
@@ -264,7 +179,7 @@ class TurnosManager {
                 this.actualizarHorariosDisponibles(e.target.value);
             });
         }
-        // Filtros
+        
         const elementos = {
             'filtro-fecha': () => this.aplicarFiltros(),
             'filtro-estado': () => this.aplicarFiltros(),
@@ -280,7 +195,6 @@ class TurnosManager {
             }
         });
 
-        // Exponer funciones globales necesarias
         this.exposeGlobalFunctions();
     }
 
@@ -300,21 +214,18 @@ class TurnosManager {
 
         selectServicio.innerHTML = '<option value="">Seleccionar servicio</option>';
         this.serviciosDisponibles.forEach(servicio => {
-            selectServicio.innerHTML += `<option value="${servicio.id}">${servicio.nombre} - $${servicio.precio}</option>`;
+            selectServicio.innerHTML += `<option value="${servicio.id}" data-precio="${servicio.precio}">${servicio.nombre} - $${servicio.precio}</option>`;
         });
     }
-    //! Revisar
-    /*
+
     cargarHorarios() {
         const selectHora = document.getElementById('editarHora');
         if (!selectHora) return;
-
         selectHora.innerHTML = '<option value="">Seleccionar hora</option>';
         this.horariosDisponibles.forEach(hora => {
             selectHora.innerHTML += `<option value="${hora}">${hora}</option>`;
         });
     }
-    */
 
     cambiarVista(vista) {
         this.vistaActual = vista;
@@ -334,19 +245,19 @@ class TurnosManager {
             }
         };
 
-        // Resetear todas las vistas
         Object.values(elementos).forEach(el => {
-            if (el.vista) el.vista.className = 'vista-oculta';
+            if (el.vista) el.vista.className = 'vista-oculta d-none';
             if (el.btn) el.btn.className = 'btn btn-secundario';
         });
 
-        // Activar vista seleccionada
         if (elementos[vista]) {
-            if (elementos[vista].vista) elementos[vista].vista.className = elementos[vista].claseVista;
+            if (elementos[vista].vista) {
+                elementos[vista].vista.className = elementos[vista].claseVista;
+                elementos[vista].vista.classList.remove('d-none');
+            }
             if (elementos[vista].btn) elementos[vista].btn.className = elementos[vista].claseBtn;
         }
 
-        // Cargar contenido según la vista
         if (vista === 'lista') {
             this.mostrarTurnos();
         } else if (vista === 'calendario') {
@@ -363,63 +274,25 @@ class TurnosManager {
         const statsPendientes = document.getElementById('stats-pendientes');
         const statsIngresos = document.getElementById('stats-ingresos');
 
-
         if (!tbody) return;
-
         tbody.innerHTML = '';
         
-        // Calcular estadísticas
         if (totalTurnos) {
             totalTurnos.textContent = `${turnosFiltrados.length} turnos`;
-            estadisticasTotalTurnos.textContent = `${turnosFiltrados.length}`;
+            estadisticasTotalTurnos.textContent = `${this.turnosData.length}`;
         }
 
-        const confirmados = turnosFiltrados.filter(t => t.estado === 'confirmado').length;
-        const pendientes = turnosFiltrados.filter(t => t.estado === 'pendiente').length;
+        const confirmados = this.turnosData.filter(t => t.estado === 'confirmado').length;
+        const pendientes = this.turnosData.filter(t => t.estado === 'pendiente').length;
+        const ingresosHoy = this.turnosData.reduce((total, t) => total + t.precio, 0);
         
-        //? Chequear - CORREGIDO
-        const ingresosHoy = turnosFiltrados.reduce((total, t) => {
-        const hoy = new Date();
-        hoy.setHours(0, 0, 0, 0);
-        
-        // Función helper para crear fecha local desde string
-        const crearFechaLocal = (fechaString) => {
-            const fecha = new Date(fechaString);
-            // Si la fecha viene en formato ISO, asegurar que se interprete como local
-            if (fechaString.includes('T')) {
-            return new Date(fecha.getTime() + fecha.getTimezoneOffset() * 60000);
-            }
-            // Si solo es fecha (YYYY-MM-DD), crear fecha local
-            const partes = fechaString.split('-');
-            if (partes.length === 3) {
-            return new Date(parseInt(partes[0]), parseInt(partes[1]) - 1, parseInt(partes[2]));
-            }
-            return fecha;
-        };
-
-        const fechaTurno = crearFechaLocal(t.fecha);
-        fechaTurno.setHours(0, 0, 0, 0);
-        
-        if (fechaTurno.getTime() === hoy.getTime()) {
-            return total + t.precio;
-        }
-        return total;
-        }, 0);
-        
-        if (statsConfirmados) {
-            statsConfirmados.textContent = confirmados;
-        }
-        if (statsPendientes) {
-            statsPendientes.textContent = pendientes;
-        }
-        if (statsIngresos) {
-            statsIngresos.textContent = `$${ingresosHoy.toLocaleString()}`;
-        }
+        if (statsConfirmados) statsConfirmados.textContent = confirmados;
+        if (statsPendientes) statsPendientes.textContent = pendientes;
+        if (statsIngresos) statsIngresos.textContent = `$${ingresosHoy.toLocaleString("es-CL")}`;
         
         turnosFiltrados.forEach(turno => {
             const row = tbody.insertRow();
-            //const fechaFormateada = new Date(turno.fecha).toLocaleDateString('es-ES');
-            const fechaFormateada = turno.fecha.split("T")[0].split("-").reverse().join("/");
+            const fechaFormateada = turno.fecha ? turno.fecha.split("-").reverse().join("/") : "";
             const estadoBadge = this.getEstadoBadge(turno.estado);
             
             row.innerHTML = `
@@ -431,7 +304,7 @@ class TurnosManager {
                 </td>
                 <td>${turno.servicio}</td>
                 <td>${estadoBadge}</td>
-                <td><strong>$${turno.precio.toLocaleString()}</strong></td>
+                <td><strong>$${Number(turno.precio).toLocaleString("es-CL")}</strong></td>
                 <td>
                     <div class="btn-group btn-group-sm">
                         <button class="btn btn-outline-warning btn-sm" onclick="editarTurno(${turno.id})" title="Editar">
@@ -461,113 +334,20 @@ class TurnosManager {
 
     aplicarFiltrosData() {
         let turnosFiltrados = [...this.turnosData];
-        
-        // Filtro por fecha
-        const filtroFecha = document.getElementById('filtro-fecha')?.value;
-        // Filtro por rango de fechas
-        const fechaDesde = document.getElementById('filtro-fecha-desde')?.value;
-        const fechaHasta = document.getElementById('filtro-fecha-hasta')?.value;
-        
-        if (fechaDesde || fechaHasta) {
-            turnosFiltrados = turnosFiltrados.filter(turno => {
-                const fechaTurno = new Date(turno.fecha);
-                fechaTurno.setHours(0, 0, 0, 0);
-                
-                if (fechaDesde && fechaHasta) {
-                    const desde = new Date(fechaDesde);
-                    const hasta = new Date(fechaHasta);
-                    hasta.setHours(23, 59, 59, 999);
-                    return fechaTurno >= desde && fechaTurno <= hasta;
-                } else if (fechaDesde) {
-                    const desde = new Date(fechaDesde);
-                    return fechaTurno >= desde;
-                } else if (fechaHasta) {
-                    const hasta = new Date(fechaHasta);
-                    hasta.setHours(23, 59, 59, 999);
-                    return fechaTurno <= hasta;
-                }
-                return true;
-            });
-        }
-
-        if (filtroFecha) {
-        const hoy = new Date();
-        hoy.setHours(0, 0, 0, 0);
-        const manana = new Date(hoy);
-        manana.setDate(hoy.getDate() + 1);
-
-        // Función helper para crear fecha local desde string
-        const crearFechaLocal = (fechaString) => {
-            const fecha = new Date(fechaString);
-            // Si la fecha viene en formato ISO, asegurar que se interprete como local
-            if (fechaString.includes('T')) {
-            // Si tiene información de tiempo, usar como está
-            return new Date(fecha.getTime() + fecha.getTimezoneOffset() * 60000);
-            }
-            // Si solo es fecha (YYYY-MM-DD), crear fecha local
-            const partes = fechaString.split('-');
-            if (partes.length === 3) {
-            return new Date(parseInt(partes[0]), parseInt(partes[1]) - 1, parseInt(partes[2]));
-            }
-            return fecha;
-        };
-
-        switch (filtroFecha) {
-            case 'hoy':
-            turnosFiltrados = turnosFiltrados.filter(t => {
-                const fechaTurno = crearFechaLocal(t.fecha);
-                fechaTurno.setHours(0, 0, 0, 0);
-                return fechaTurno.getTime() === hoy.getTime();
-            });
-            break;
-            
-            case 'manana':
-            turnosFiltrados = turnosFiltrados.filter(t => {
-                const fechaTurno = crearFechaLocal(t.fecha);
-                fechaTurno.setHours(0, 0, 0, 0);
-                return fechaTurno.getTime() === manana.getTime();
-            });
-            break;
-            
-            case 'semana':
-            const inicioSemana = new Date(hoy);
-            inicioSemana.setDate(hoy.getDate() - hoy.getDay());
-            const finSemana = new Date(inicioSemana);
-            finSemana.setDate(inicioSemana.getDate() + 6);
-            finSemana.setHours(23, 59, 59, 999);
-            
-            turnosFiltrados = turnosFiltrados.filter(t => {
-                const fechaTurno = crearFechaLocal(t.fecha);
-                return fechaTurno >= inicioSemana && fechaTurno <= finSemana;
-            });
-            break;
-            
-            case 'mes':
-            turnosFiltrados = turnosFiltrados.filter(t => {
-                const fechaTurno = crearFechaLocal(t.fecha);
-                return fechaTurno.getMonth() === hoy.getMonth() &&
-                    fechaTurno.getFullYear() === hoy.getFullYear();
-            });
-            break;
-        }
-        }
-        
-        // Filtro por estado
         const filtroEstado = document.getElementById('filtro-estado')?.value;
+        const filtroServicio = document.getElementById('filtro-servicio')?.value;
+        const busqueda = document.getElementById('buscar-turno')?.value?.toLowerCase();
+
         if (filtroEstado && filtroEstado !== 'todos') {
             turnosFiltrados = turnosFiltrados.filter(t => t.estado === filtroEstado);
         }
         
-        // Filtro por servicio
-        const filtroServicio = document.getElementById('filtro-servicio')?.value;
         if (filtroServicio && filtroServicio !== 'todos') {
             turnosFiltrados = turnosFiltrados.filter(t => 
                 t.servicio.toLowerCase().includes(filtroServicio.toLowerCase())
             );
         }
         
-        // Filtro por búsqueda
-        const busqueda = document.getElementById('buscar-turno')?.value?.toLowerCase();
         if (busqueda) {
             turnosFiltrados = turnosFiltrados.filter(t => 
                 t.cliente.toLowerCase().includes(busqueda) ||
@@ -578,236 +358,85 @@ class TurnosManager {
         return turnosFiltrados;
     }
 
-    limpiarFiltros() {
-        // Elementos básicos
-        const elementosBasicos = {
-            'filtro-fecha': 'todos',
-            'filtro-estado': 'todos', 
-            'filtro-servicio': 'todos',
-            'buscar-turno': '',
-            'filtro-fecha-desde': '',
-            'filtro-fecha-hasta': ''
-        };
-
-        // Limpiar cada elemento con su valor por defecto
-        Object.entries(elementosBasicos).forEach(([id, valorPorDefecto]) => {
-            const elemento = document.getElementById(id);
-            if (elemento) {
-                elemento.value = valorPorDefecto;
-                
-                // Disparar evento change para elementos select
-                if (elemento.tagName === 'SELECT') {
-                    elemento.dispatchEvent(new Event('change'));
-                }
-            }
+    advancedSearch(criteria) {
+        return this.turnosData.filter(t => {
+            if (criteria.cliente && !t.cliente.toLowerCase().includes(criteria.cliente.toLowerCase())) return false;
+            if (criteria.estado && criteria.estado !== 'todos' && t.estado !== criteria.estado) return false;
+            if (criteria.precioMinimo && t.precio < parseFloat(criteria.precioMinimo)) return false;
+            if (criteria.precioMaximo && t.precio > parseFloat(criteria.precioMaximo)) return false;
+            return true;
         });
+    }
 
-        // Recargar los turnos
-        this.cargarTurnosDesdeAPI()
-            .then(() => {
-                this.mostrarTurnos();
-                NotificationService.show('Filtros limpiados correctamente');
-            })
-            .catch(error => {
-                console.error('Error al recargar turnos:', error);
-                NotificationService.showError('Error al recargar los turnos');
-            });
+    limpiarFiltros() {
+        document.getElementById('filtro-fecha').value = 'todos';
+        document.getElementById('filtro-estado').value = 'todos';
+        document.getElementById('filtro-servicio').value = 'todos';
+        document.getElementById('buscar-turno').value = '';
+        this.mostrarTurnos();
+        NotificationService.show('Filtros limpiados correctamente');
     }
 
     async editarTurno(id) {
         this.turnoSeleccionado = this.turnosData.find(t => t.id === id);
         if (!this.turnoSeleccionado) return;
         
-        // Llenar el modal con los datos del turno
-        const campos = {
-            'editarTurnoId': this.turnoSeleccionado.id,
-            'editarFecha': this.turnoSeleccionado.fecha,
-            'editarHora': this.turnoSeleccionado.hora,
-            'editarNombre': this.turnoSeleccionado.cliente.split(' ')[0] || '',
-            'editarApellido': this.turnoSeleccionado.cliente.split(' ')[1] || '',
-            'editarTelefono': this.turnoSeleccionado.telefono,
-            'editarEmail': this.turnoSeleccionado.email,
-            'editarEstado': this.turnoSeleccionado.estado
-        };
+        document.getElementById('editarTurnoId').value = this.turnoSeleccionado.id;
+        document.getElementById('editarFecha').value = this.turnoSeleccionado.fecha;
+        document.getElementById('editarHora').value = this.turnoSeleccionado.hora;
+        document.getElementById('editarNombre').value = this.turnoSeleccionado.nombre;
+        document.getElementById('editarApellido').value = this.turnoSeleccionado.apellido;
+        document.getElementById('editarTelefono').value = this.turnoSeleccionado.telefono;
+        document.getElementById('editarEmail').value = this.turnoSeleccionado.email;
+        document.getElementById('editarEstado').value = this.turnoSeleccionado.estado;
 
-        Object.entries(campos).forEach(([id, value]) => {
-            const elemento = document.getElementById(id);
-            if (elemento) elemento.value = value;
-        });
-
-        // Seleccionar el servicio
-        const servicioId = this.serviciosDisponibles.find(s => 
-            s.tipo === this.turnoSeleccionado.servicio
-        )?.id || '';
-        const selectServicio = document.getElementById('editarServicio');
-        if (selectServicio) selectServicio.value = servicioId;
-
-        // Actualizar horarios disponibles para la fecha del turno
-        await this.actualizarHorariosDisponibles(this.turnoSeleccionado.fecha);
-        
-        // Mostrar el modal
         const modal = document.getElementById('modalEditarTurno');
         if (modal) {
             new bootstrap.Modal(modal).show();
         }
     }
 
-    cargarHorarios() {
+    async actualizarHorariosDisponibles(fecha) {
+        if (!fecha) return;
         const selectHora = document.getElementById('editarHora');
         if (!selectHora) return;
-        const selectFecha = document.getElementById('editarFecha');
-
-        // Solo cargar el placeholder inicial
-        selectHora.innerHTML = '<option value="">Seleccione una fecha primero</option>';
-        this.actualizarHorariosDisponibles(selectFecha.value);
+        selectHora.innerHTML = '<option value="">Seleccionar hora</option>';
+        this.horariosDisponibles.forEach(hora => {
+            selectHora.add(new Option(hora, hora));
+        });
     }
-
-    async checkAvailability(fecha, hora) {
-        try {
-            const occupiedDates = await this.apiService.getOccupiedDates();
-            const dateTimeToCheck = `${fecha}T${hora}`;
-            
-            return !occupiedDates.includes(dateTimeToCheck);
-        } catch (error) {
-            console.error('Error al verificar disponibilidad:', error);
-            throw error;
-        }
-    }
-
-    async validateDateTime(fecha, hora) {
-        if (!fecha || !hora) return false;
-
-        const isAvailable = await this.checkAvailability(fecha, hora);
-        
-        if (!isAvailable) {
-            NotificationService.showError('El horario seleccionado no está disponible');
-            return false;
-        }
-
-        return true;
-    }
-
-    
-   async actualizarHorariosDisponibles(fecha) {
-        if (!fecha) return;
-        
-        try {
-            const occupiedDates = await this.apiService.getOccupiedDates();
-            console.log('Fechas ocupadas:', occupiedDates);
-            const selectHora = document.getElementById('editarHora');
-            selectHora.innerHTML = '<option value="">Seleccionar hora</option>';
-            
-            // Filtrar horas ocupadas SOLO de la fecha seleccionada
-            const ocupados = occupiedDates
-                .filter(d => d.startsWith(fecha))
-                .map(d => {
-                    const fechaCompleta = new Date(d);
-                    return fechaCompleta.toTimeString().slice(0, 5);
-                });
-            
-            console.log('Fecha seleccionada:', fecha);
-            console.log('Horarios ocupados para esta fecha:', ocupados);
-            
-            // Mostrar solo horarios disponibles
-            let horariosDisponibles = [];
-            HORARIOS_LABORALES.forEach(hora => {
-                if (!ocupados.includes(hora)) {
-                    horariosDisponibles.push(hora);
-                    const selected = this.turnoSeleccionado?.hora === hora;
-                    selectHora.add(new Option(hora, hora, selected, selected));
-                }
-            });
-            
-            console.log('Horarios disponibles agregados al select:', horariosDisponibles);
-            console.log('Total opciones en el select:', selectHora.options.length);
-            
-            // Si no queda ninguna opción disponible
-            if (selectHora.options.length === 1) {
-                const opt = new Option("No hay horarios disponibles", "");
-                opt.disabled = true;
-                selectHora.add(opt);
-            }
-            
-        } catch (err) {
-            console.error('Error al actualizar horarios:', err);
-            NotificationService.showError('Error al cargar horarios disponibles');
-        }
-    }
-
-
 
     async guardarEdicionTurno() {
         try {
-        const id = parseInt(document.getElementById('editarTurnoId')?.value);
-        if (!id) return;
+            const id = parseInt(document.getElementById('editarTurnoId')?.value);
+            if (!id) return;
 
-        const fecha = document.getElementById('editarFecha')?.value;
-        const hora = document.getElementById('editarHora')?.value;
+            const fecha = document.getElementById('editarFecha')?.value;
+            const hora = document.getElementById('editarHora')?.value;
+            const nombre = document.getElementById('editarNombre')?.value;
+            const apellido = document.getElementById('editarApellido')?.value;
+            const telefono = document.getElementById('editarTelefono')?.value;
+            const email = document.getElementById('editarEmail')?.value;
+            const estado = document.getElementById('editarEstado')?.value;
 
-        // Validar que haya fecha y hora seleccionadas
-        if (!fecha || !hora) {
-            NotificationService.showError('Debe seleccionar fecha y hora');
-            return;
-        }
+            const selectServicio = document.getElementById('editarServicio');
+            const servicioTipo = selectServicio.selectedOptions[0]?.text.split(' - ')[0] || 'Corte';
+            const precio = parseFloat(selectServicio.selectedOptions[0]?.dataset?.precio || 10000);
 
-        // Formatear correctamente la fecha y hora
-        const fechaHora = `${fecha}T${hora}:00`;
+            const apiData = {
+                fechaHora: `${fecha}T${hora}`,
+                cliente: { nombre, apellido, email, telefono },
+                servicio: { tipo: servicioTipo, precio },
+                estado
+            };
 
-        const servicioId = document.getElementById('editarServicio')?.value;
-        const servicio = this.serviciosDisponibles.find(s => s.id == servicioId);
-        
-        if (!servicio) {
-            NotificationService.showError('Debe seleccionar un servicio válido');
-            return;
-        }
-
-        const apiData = {
-            id: id,
-            fechaHora: fechaHora,
-            cliente: {
-                nombre: document.getElementById('editarNombre')?.value || null,
-                apellido: document.getElementById('editarApellido')?.value || null,
-                email: null,
-                telefono: document.getElementById('editarTelefono')?.value || null
-            },
-            servicio: {
-                id: parseInt(servicioId),
-                tipo: servicio.tipo,
-                precio: servicio.precio
-            }
-        };
-
-            // Actualizar en la API usando PATCH
             await this.apiService.patchTurno(id, apiData);
             
-            // Actualizar en los datos locales
-            const turnoIndex = this.turnosData.findIndex(t => t.id === id);
-            if (turnoIndex !== -1) {
-                this.turnosData[turnoIndex] = {
-                    id: id,
-                    fecha: document.getElementById('editarFecha')?.value,
-                    hora: document.getElementById('editarHora')?.value,
-                    cliente: `${apiData.cliente.nombre || ''} ${apiData.cliente.apellido || ''}`.trim(),
-                    telefono: apiData.cliente.telefono || '',
-                    servicio: servicio.tipo,
-                    precio: servicio.precio,
-                    estado: document.getElementById('editarEstado')?.value
-                };
-            }
-                        
-            // Cerrar modal y actualizar vista
             const modal = bootstrap.Modal.getInstance(document.getElementById('modalEditarTurno'));
             if (modal) modal.hide();
             
-            // Recargar los datos desde la API para asegurar consistencia
             await this.cargarTurnosDesdeAPI();
-            
-            if (this.vistaActual === 'lista') {
-                this.mostrarTurnos();
-            } else {
-                this.generarCalendario();
-            }
-            
+            this.mostrarTurnos();
             NotificationService.show('Turno actualizado exitosamente');
 
         } catch (error) {
@@ -822,8 +451,7 @@ class TurnosManager {
         
         const modalTexto = document.getElementById('modalConfirmarTexto');
         if (modalTexto) {
-            modalTexto.textContent = 
-                `¿Estás seguro de que deseas eliminar el turno de ${turno.cliente} del ${new Date(turno.fecha).toLocaleDateString('es-ES')} a las ${turno.hora}?`;
+            modalTexto.textContent = `¿Estás seguro de que deseas eliminar el turno de ${turno.cliente}?`;
         }
         
         const btnConfirmar = document.getElementById('btnConfirmarAccion');
@@ -831,15 +459,8 @@ class TurnosManager {
             btnConfirmar.onclick = async () => {
                 try {
                     await this.apiService.deleteTurno(id);
-                    
-                    // Remover de los datos locales
-                    this.turnosData = this.turnosData.filter(t => t.id !== id);
-                    
-                    if (this.vistaActual === 'lista') {
-                        this.mostrarTurnos();
-                    } else {
-                        this.generarCalendario();
-                    }
+                    await this.cargarTurnosDesdeAPI();
+                    this.mostrarTurnos();
                     
                     const modal = bootstrap.Modal.getInstance(document.getElementById('modalConfirmar'));
                     if (modal) modal.hide();
@@ -858,7 +479,6 @@ class TurnosManager {
         }
     }
 
-    // Funciones del calendario
     navegarMes(direccion) {
         this.fechaActualCalendario.setMonth(this.fechaActualCalendario.getMonth() + direccion);
         this.actualizarMesActual();
@@ -872,8 +492,7 @@ class TurnosManager {
         ];
         const mesActual = document.getElementById('mes-actual');
         if (mesActual) {
-            mesActual.textContent = 
-                `${meses[this.fechaActualCalendario.getMonth()]} ${this.fechaActualCalendario.getFullYear()}`;
+            mesActual.textContent = `${meses[this.fechaActualCalendario.getMonth()]} ${this.fechaActualCalendario.getFullYear()}`;
         }
     }
 
@@ -891,18 +510,15 @@ class TurnosManager {
         
         let html = '<div class="calendario-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: #333;">';
         
-        // Encabezados de días
         const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
         diasSemana.forEach(dia => {
             html += `<div class="calendario-header text-center py-2 bg-secondary text-white fw-bold">${dia}</div>`;
         });
         
-        // Días vacíos al inicio
         for (let i = 0; i < primerDiaSemana; i++) {
             html += '<div class="calendario-dia bg-dark" style="min-height: 80px;"></div>';
         }
         
-        // Días del mes
         for (let dia = 1; dia <= diasEnMes; dia++) {
             const fechaDia = `${year}-${String(month + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
             const turnosDelDia = this.turnosData.filter(t => t.fecha === fechaDia);
@@ -911,9 +527,7 @@ class TurnosManager {
             html += `
                 <div class="calendario-dia bg-dark p-1 ${esHoy ? 'border border-warning' : ''}" 
                      style="min-height: 80px; cursor: pointer; transition: background-color 0.2s;" 
-                     onclick="seleccionarDia('${fechaDia}')"
-                     onmouseover="this.style.backgroundColor='#333'"
-                     onmouseout="this.style.backgroundColor='#1c1c1c'">
+                     onclick="seleccionarDia('${fechaDia}')">
                     <div class="text-white fw-bold mb-1">${dia}</div>
                     ${turnosDelDia.map(t => 
                         `<div class="small badge me-1 mb-1" style="background-color: ${this.getColorEstado(t.estado)}; font-size: 0.6rem;">
@@ -940,16 +554,11 @@ class TurnosManager {
     seleccionarDia(fecha) {
         const turnosDelDia = this.turnosData.filter(t => t.fecha === fecha);
         const fechaFormateada = new Date(fecha).toLocaleDateString('es-ES', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
         });
         
         const fechaSeleccionada = document.getElementById('fecha-seleccionada');
-        if (fechaSeleccionada) {
-            fechaSeleccionada.textContent = fechaFormateada;
-        }
+        if (fechaSeleccionada) fechaSeleccionada.textContent = fechaFormateada;
         
         const container = document.getElementById('turnos-dia');
         if (!container) return;
@@ -965,17 +574,11 @@ class TurnosManager {
                                 <h6 class="card-title mb-1">${turno.hora} - ${turno.cliente}</h6>
                                 <small class="text-muted">${turno.servicio}</small>
                             </div>
-                            <div>
-                                ${this.getEstadoBadge(turno.estado)}
-                            </div>
+                            <div>${this.getEstadoBadge(turno.estado)}</div>
                         </div>
                         <div class="mt-2">
-                            <button class="btn btn-outline-warning btn-sm me-1" onclick="editarTurno(${turno.id})">
-                                <i class="bi bi-pencil"></i>
-                            </button>
-                            <button class="btn btn-outline-danger btn-sm" onclick="cancelarTurno(${turno.id})">
-                                <i class="bi bi-trash"></i>
-                            </button>
+                            <button class="btn btn-outline-warning btn-sm me-1" onclick="editarTurno(${turno.id})"><i class="bi bi-pencil"></i></button>
+                            <button class="btn btn-outline-danger btn-sm" onclick="cancelarTurno(${turno.id})"><i class="bi bi-trash"></i></button>
                         </div>
                     </div>
                 </div>
@@ -983,7 +586,6 @@ class TurnosManager {
         }
     }
 
-    // Método público para refrescar datos
     async refreshData() {
         try {
             await this.cargarTurnosDesdeAPI();
@@ -998,235 +600,116 @@ class TurnosManager {
             NotificationService.showError('Error al actualizar los datos');
         }
     }
+
+    exportToCSV() {
+        if (this.turnosData.length === 0) {
+            alert('No hay turnos para exportar.');
+            return;
+        }
+        let csv = "Fecha,Hora,Cliente,Telefono,Servicio,Precio,Estado\n";
+        this.turnosData.forEach(t => {
+            csv += `"${t.fecha}","${t.hora}","${t.cliente}","${t.telefono}","${t.servicio}","${t.precio}","${t.estado}"\n`;
+        });
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "turnos_barberia.csv";
+        a.click();
+    }
 }
 
-// Inicialización cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => {
-    // Verificar que Bootstrap esté disponible
     if (typeof bootstrap === 'undefined') {
         console.error('Bootstrap no está cargado');
         return;
     }
 
     const fechaInput = document.getElementById('editarFecha');
-    fechaInput.min = new Date().toISOString().split('T')[0];
+    if (fechaInput) {
+        fechaInput.min = new Date().toISOString().split('T')[0];
+    }
 
-    // Inicializar la aplicación
     window.turnosManager = new TurnosManager();
 
-    // Agregar estilos CSS adicionales
     const style = document.createElement('style');
     style.textContent = `
         .vista-activa { display: block !important; }
         .vista-oculta { display: none !important; }
-        .calendario-grid .calendario-dia:hover {
-            background-color: #333 !important;
-        }
-        .loading {
-            opacity: 0.6;
-            pointer-events: none;
-        }
+        .calendario-grid .calendario-dia:hover { background-color: #333 !important; }
     `;
     document.head.appendChild(style);
-    // Exponer función global para refrescar datos
+
     window.refreshTurnos = () => {
-        if (window.turnosManager) {
-            window.turnosManager.refreshData();
-        }
+        if (window.turnosManager) window.turnosManager.refreshData();
     };
 });
 
-// <-- Script Refactor -->
-// Funciones adicionales para la interfaz
-    function toggleAdvancedFilters() {
-      const advancedFilters = document.getElementById('advanced-filters');
-      if (advancedFilters) {
-        advancedFilters.classList.toggle('d-none');
-      }
-    }
+function toggleAdvancedFilters() {
+    const advancedFilters = document.getElementById('advanced-filters');
+    if (advancedFilters) advancedFilters.classList.toggle('d-none');
+}
 
-    function applyAdvancedFilters() {
-      if (!window.turnosManager) return;
-      
-      const criteria = {
-        precioMinimo: document.getElementById('filtro-precio-min')?.value,
-        precioMaximo: document.getElementById('filtro-precio-max')?.value,
+function applyAdvancedFilters() {
+    if (!window.turnosManager) return;
+    const criteria = {
         cliente: document.getElementById('filtro-cliente')?.value,
-        // Agregar otros criterios según sea necesario
-      };
+        precioMinimo: document.getElementById('filtro-precio-min')?.value,
+        precioMaximo: document.getElementById('filtro-precio-max')?.value
+    };
+    const results = window.turnosManager.advancedSearch(criteria);
+    window.turnosManager.turnosData = results;
+    window.turnosManager.mostrarTurnos();
+}
 
-      const results = window.turnosManager.advancedSearch(criteria);
-      // Mostrar resultados filtrados
-      window.turnosManager.turnosData = results;
-      window.turnosManager.mostrarTurnos();
-    }
+function updatePrecio() {
+    const servicioSelect = document.getElementById('editarServicio');
+    const precioInput = document.getElementById('editarPrecio');
+    if (!servicioSelect || !precioInput) return;
+    const precio = servicioSelect.selectedOptions[0]?.dataset?.precio || '';
+    precioInput.value = precio;
+}
 
-    function updatePrecio() {
-      const servicioSelect = document.getElementById('editarServicio');
-      const precioInput = document.getElementById('editarPrecio');
-      const previewElement = document.getElementById('preview-turno');
-      
-      if (!servicioSelect || !precioInput || !window.turnosManager) return;
+function goToToday() {
+    if (!window.turnosManager) return;
+    window.turnosManager.fechaActualCalendario = new Date();
+    window.turnosManager.actualizarMesActual();
+    window.turnosManager.generarCalendario();
+    window.turnosManager.seleccionarDia(new Date().toISOString().split('T')[0]);
+}
 
-      const servicioId = servicioSelect.value;
-      const servicio = window.turnosManager.serviciosDisponibles.find(s => s.id == servicioId);
-      
-      if (servicio) {
-        precioInput.value = servicio.precio;
-        updatePreview();
-      } else {
-        precioInput.value = '';
-      }
-    }
-
-    function updatePreview() {
-      const previewElement = document.getElementById('preview-turno');
-      if (!previewElement) return;
-
-      const fecha = document.getElementById('editarFecha')?.value;
-      const hora = document.getElementById('editarHora')?.value;
-      const nombre = document.getElementById('editarNombre')?.value;
-      const apellido = document.getElementById('editarApellido')?.value;
-      const servicio = document.getElementById('editarServicio')?.selectedOptions[0]?.text;
-      const precio = document.getElementById('editarPrecio')?.value;
-
-        if (fecha && hora && nombre && servicio) {
-        // Corregir el problema de la fecha
-        const [year, month, day] = fecha.split("-");
-        const fechaFormateada = new Date(
-            year,
-            month - 1,
-            parseInt(day)
-        ).toLocaleDateString("es-ES", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-        });
-
-        previewElement.innerHTML = `
-                <strong>${nombre} ${apellido}</strong><br>
-                ${fechaFormateada} a las ${hora}<br>
-                <em>${servicio}</em><br>
-            `;
-        } else {
-        previewElement.textContent =
-            "Complete los datos para ver la vista previa";
-        }
-    }
-
-    function goToToday() {
-      if (!window.turnosManager) return;
-      
-      window.turnosManager.fechaActualCalendario = new Date();
-      window.turnosManager.actualizarMesActual();
-      window.turnosManager.generarCalendario();
-      
-      // Seleccionar el día de hoy automáticamente
-      const today = new Date();
-      const todayString = today.toISOString().split('T')[0];
-      window.seleccionarDia(todayString);
-    }
-
-    function sortTable(column) {
-      if (!window.turnosManager) return;
-      
-      // Implementar ordenamiento
-      const isAsc = window.turnosManager.sortDirection !== 'asc';
-      window.turnosManager.sortDirection = isAsc ? 'asc' : 'desc';
-      window.turnosManager.sortColumn = column;
-      
-      window.turnosManager.turnosData.sort((a, b) => {
-        let aValue = a[column];
-        let bValue = b[column];
-        
-        if (column === 'precio') {
-          aValue = parseFloat(aValue) || 0;
-          bValue = parseFloat(bValue) || 0;
-        } else if (column === 'fecha') {
-          aValue = new Date(aValue);
-          bValue = new Date(bValue);
-        }
-        
-        if (aValue < bValue) return isAsc ? -1 : 1;
-        if (aValue > bValue) return isAsc ? 1 : -1;
+function sortTable(column) {
+    if (!window.turnosManager) return;
+    const isAsc = window.turnosManager.sortDirection !== 'asc';
+    window.turnosManager.sortDirection = isAsc ? 'asc' : 'desc';
+    window.turnosManager.sortColumn = column;
+    
+    window.turnosManager.turnosData.sort((a, b) => {
+        let aVal = a[column], bVal = b[column];
+        if (column === 'precio') { aVal = parseFloat(aVal) || 0; bVal = parseFloat(bVal) || 0; }
+        if (aVal < bVal) return isAsc ? -1 : 1;
+        if (aVal > bVal) return isAsc ? 1 : -1;
         return 0;
-      });
-      
-      window.turnosManager.mostrarTurnos();
-    }
-
-    function limpiarBusquedaAvanzada() {
-      const form = document.getElementById('formBusquedaAvanzada');
-      if (form) {
-        form.reset();
-      }
-    }
-
-    function ejecutarBusquedaAvanzada() {
-      if (!window.turnosManager) return;
-      
-      const criteria = {
-        fechaDesde: document.getElementById('searchFechaDesde')?.value,
-        fechaHasta: document.getElementById('searchFechaHasta')?.value,
-        cliente: document.getElementById('searchCliente')?.value,
-        servicio: document.getElementById('searchServicio')?.value,
-        precioMinimo: document.getElementById('searchPrecioMin')?.value,
-        precioMaximo: document.getElementById('searchPrecioMax')?.value,
-        estado: document.getElementById('searchEstado')?.value
-      };
-
-      const results = window.turnosManager.advancedSearch(criteria);
-      
-      // Crear una vista temporal con los resultados
-      const originalData = [...window.turnosManager.turnosData];
-      window.turnosManager.turnosData = results;
-      window.turnosManager.mostrarTurnos();
-      
-      // Cerrar modal
-      const modal = bootstrap.Modal.getInstance(document.getElementById('modalBusquedaAvanzada'));
-      if (modal) modal.hide();
-      
-      // Mostrar botón para restaurar vista
-      showRestoreButton(originalData);
-    }
-
-    function showRestoreButton(originalData) {
-      const existingButton = document.getElementById('restore-view-btn');
-      if (existingButton) existingButton.remove();
-      
-      const button = document.createElement('button');
-      button.id = 'restore-view-btn';
-      button.className = 'btn btn-outline-warning btn-sm';
-      button.innerHTML = '<i class="bi bi-arrow-clockwise me-1"></i>Mostrar todos los turnos';
-      button.onclick = () => {
-        if (window.turnosManager) {
-          window.turnosManager.turnosData = originalData;
-          window.turnosManager.mostrarTurnos();
-          button.remove();
-        }
-      };
-      
-      const totalTurnos = document.getElementById('total-turnos');
-      if (totalTurnos && totalTurnos.parentNode) {
-        totalTurnos.parentNode.insertBefore(button, totalTurnos.nextSibling);
-      }
-    }
-
-    // Event listeners para actualización en tiempo real del preview
-    document.addEventListener('DOMContentLoaded', function() {
-      // Agregar listeners para la vista previa
-      const fieldsToWatch = ['editarFecha', 'editarHora', 'editarNombre', 'editarServicio'];
-      fieldsToWatch.forEach(fieldId => {
-        const field = document.getElementById(fieldId);
-        if (field) {
-          field.addEventListener('change', updatePreview);
-          field.addEventListener('input', updatePreview);
-        }
-      });
     });
+    window.turnosManager.mostrarTurnos();
+}
 
+function limpiarBusquedaAvanzada() {
+    document.getElementById('formBusquedaAvanzada')?.reset();
+}
 
-    // Reemplazar la clase NotificationService original
-    if (typeof window !== 'undefined') {
-      window.NotificationService = NotificationService;
-    }
+function ejecutarBusquedaAvanzada() {
+    if (!window.turnosManager) return;
+    const criteria = {
+        cliente: document.getElementById('searchCliente')?.value,
+        estado: document.getElementById('searchEstado')?.value,
+        precioMinimo: document.getElementById('searchPrecioMin')?.value,
+        precioMaximo: document.getElementById('searchPrecioMax')?.value
+    };
+    const results = window.turnosManager.advancedSearch(criteria);
+    window.turnosManager.turnosData = results;
+    window.turnosManager.mostrarTurnos();
+    
+    const modal = bootstrap.Modal.getInstance(document.getElementById('modalBusquedaAvanzada'));
+    if (modal) modal.hide();
+}
