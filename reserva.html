@@ -48,12 +48,7 @@
             <div class="select-wrapper">
               <select class="input-lux select-lux" id="servicio" required>
                 <option value="">-- Selecciona un servicio --</option>
-                <option value="1" data-precio="10000">Corte Clásico / Tradicional — $10.000</option>
-                <option value="2" data-precio="7000">Perfilado & Afeitado de Barba — $7.000</option>
-                <option value="3" data-precio="15000">Combo Corte + Barba Completo — $15.000</option>
-                <option value="4" data-precio="8000">Corte Infantil / Escolar — $8.000</option>
-                <option value="5" data-precio="18000">Tintura / Camuflaje de Canas — $18.000</option>
-                <option value="6" data-precio="25000">Corte VIP a Domicilio — $25.000</option>
+                <!-- Se cargará dinámicamente desde el panel de administración -->
               </select>
             </div>
           </div>
@@ -126,5 +121,37 @@
   </main>
 
   <script src="./js/scripts.js"></script>
+  <script>
+    // Cargar servicios dinámicamente desde el localStorage compartido con el panel
+    document.addEventListener("DOMContentLoaded", function() {
+      const selectServicio = document.getElementById("servicio");
+      if (!selectServicio) return;
+
+      const SERVICIOS_DEFAULT = [
+        { id: 1, tipo: "Corte Clásico / Tradicional", precio: 10000 },
+        { id: 2, tipo: "Perfilado & Afeitado de Barba", precio: 7000 },
+        { id: 3, tipo: "Combo Corte + Barba Completo", precio: 15000 },
+        { id: 4, tipo: "Corte Infantil / Escolar", precio: 8000 },
+        { id: 5, tipo: "Tintura / Camuflaje de Canas", precio: 18000 },
+        { id: 6, tipo: "Corte VIP a Domicilio", precio: 25000 }
+      ];
+
+      let servicios = JSON.parse(localStorage.getItem("servicios_barberia"));
+      if (!servicios || servicios.length === 0) {
+        servicios = SERVICIOS_DEFAULT;
+        localStorage.setItem("servicios_barberia", JSON.stringify(servicios));
+      }
+
+      // Limpiar y poblar el select
+      selectServicio.innerHTML = '<option value="">-- Selecciona un servicio --</option>';
+      servicios.forEach(s => {
+        const option = document.createElement("option");
+        option.value = s.id;
+        option.setAttribute("data-precio", s.precio);
+        option.textContent = `${s.tipo} — $${Number(s.precio).toLocaleString("es-CL")}`;
+        selectServicio.appendChild(option);
+      });
+    });
+  </script>
 </body>
 </html>
