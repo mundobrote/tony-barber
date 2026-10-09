@@ -87,7 +87,7 @@
           </h5>
           <small class="text-muted">Los cambios que hagas aquí se verán inmediatamente en el formulario de reservas del cliente.</small>
         </div>
-        <button class="btn btn-lux-primary" data-bs-toggle="modal" data-bs-target="#modalServicio" onclick="abrirModalNuevo()">
+        <button class="btn btn-warning btn-sm fw-bold px-3" data-bs-toggle="modal" data-bs-target="#modalServicio" onclick="abrirModalNuevoServicio()">
           <i class="bi bi-plus-circle me-1"></i> Añadir Servicio
         </button>
       </div>
@@ -107,7 +107,35 @@
       </div>
     </div>
 
-    <!-- 3. TURNOS AGENDADOS -->
+    <!-- 3. GESTIÓN DE BARBEROS -->
+    <div class="panel-box">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h5 class="text-uppercase text-warning fw-bold mb-1 tracking-wider">
+            <i class="bi bi-people me-2"></i> Gestión de Barberos
+          </h5>
+          <small class="text-muted">Administra los barberos disponibles y sus fotos para el sitio web.</small>
+        </div>
+        <button class="btn btn-warning btn-sm fw-bold px-3" data-bs-toggle="modal" data-bs-target="#modalBarbero" onclick="abrirModalNuevoBarbero()">
+          <i class="bi bi-plus-circle me-1"></i> Añadir Barbero
+        </button>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-lux">
+          <thead>
+            <tr>
+              <th>Foto</th>
+              <th>Nombre</th>
+              <th class="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tablaBarberosBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 4. TURNOS AGENDADOS -->
     <div class="panel-box">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="text-uppercase text-warning fw-bold mb-0 tracking-wider">
@@ -122,6 +150,7 @@
               <th>Fecha & Hora</th>
               <th>Cliente</th>
               <th>Teléfono</th>
+              <th>Barbero</th>
               <th>Servicio</th>
               <th>Monto</th>
               <th>Estado</th>
@@ -146,16 +175,43 @@
           <input type="hidden" id="servicioId">
           <div class="mb-3">
             <label class="form-label text-white small fw-bold text-uppercase">Nombre del Servicio</label>
-            <input type="text" id="servicioNombre" class="form-control bg-secondary text-white border-0" placeholder="Ej. Corte Clásico + Barboterapia" required>
+            <input type="text" id="servicioNombre" class="form-control bg-secondary text-white border-0" placeholder="Ej. Corte Clásico" required>
           </div>
           <div class="mb-3">
             <label class="form-label text-white small fw-bold text-uppercase">Precio ($ CLP)</label>
-            <input type="number" id="servicioPrecio" class="form-control bg-secondary text-white border-0" placeholder="Ej. 12000" required>
+            <input type="number" id="servicioPrecio" class="form-control bg-secondary text-white border-0" placeholder="Ej. 10000" required>
           </div>
         </div>
         <div class="modal-footer border-0">
           <button type="button" class="btn btn-outline-light btn-sm" data-bs-dismiss="modal">Cancelar</button>
-          <button type="button" class="btn btn-warning fw-bold px-4" onclick="guardarServicio()">Guardar Cambios</button>
+          <button type="button" class="btn btn-warning fw-bold px-4" onclick="guardarServicio()">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para Agregar / Editar Barbero -->
+  <div class="modal fade" id="modalBarbero" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content bg-dark border border-warning p-3 text-white" style="border-radius: 12px;">
+        <div class="modal-header border-0">
+          <h5 class="modal-title fw-bold text-warning" id="modalBarberoTitulo">Añadir Barbero</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="barberoId">
+          <div class="mb-3">
+            <label class="form-label text-white small fw-bold text-uppercase">Nombre del Barbero</label>
+            <input type="text" id="barberoNombre" class="form-control bg-secondary text-white border-0" placeholder="Ej. Tony" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-white small fw-bold text-uppercase">URL de la Foto</label>
+            <input type="text" id="barberoFoto" class="form-control bg-secondary text-white border-0" placeholder="https://..." required>
+          </div>
+        </div>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-outline-light btn-sm" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-warning fw-bold px-4" onclick="guardarBarbero()">Guardar</button>
         </div>
       </div>
     </div>
@@ -163,6 +219,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script>
+    // --- GESTIÓN DE SERVICIOS ---
     const SERVICIOS_DEFAULT = [
       { id: 1, tipo: "Corte Clásico / Tradicional", precio: 10000 },
       { id: 2, tipo: "Perfilado & Afeitado de Barba", precio: 7000 },
@@ -194,19 +251,15 @@
           <td class="fw-bold">${s.tipo}</td>
           <td class="text-warning fw-semibold">$${Number(s.precio).toLocaleString("es-CL")}</td>
           <td class="text-end">
-            <button class="btn btn-sm btn-outline-warning me-2" onclick="editarServicio(${s.id})">
-              <i class="bi bi-pencil"></i> Editar
-            </button>
-            <button class="btn btn-sm btn-outline-danger" onclick="eliminarServicio(${s.id})">
-              <i class="bi bi-trash"></i>
-            </button>
+            <button class="btn btn-sm btn-outline-warning me-2" onclick="editarServicio(${s.id})"><i class="bi bi-pencil"></i></button>
+            <button class="btn btn-sm btn-outline-danger" onclick="eliminarServicio(${s.id})"><i class="bi bi-trash"></i></button>
           </td>
         `;
         tbody.appendChild(tr);
       });
     }
 
-    function abrirModalNuevo() {
+    function abrirModalNuevoServicio() {
       document.getElementById("modalServicioTitulo").textContent = "Añadir Nuevo Servicio";
       document.getElementById("servicioId").value = "";
       document.getElementById("servicioNombre").value = "";
@@ -217,48 +270,120 @@
       const servicios = obtenerServicios();
       const s = servicios.find(item => item.id === id);
       if (!s) return;
-
       document.getElementById("modalServicioTitulo").textContent = "Modificar Servicio";
       document.getElementById("servicioId").value = s.id;
       document.getElementById("servicioNombre").value = s.tipo;
       document.getElementById("servicioPrecio").value = s.precio;
-
-      const modal = new bootstrap.Modal(document.getElementById("modalServicio"));
-      modal.show();
+      new bootstrap.Modal(document.getElementById("modalServicio")).show();
     }
 
     function guardarServicio() {
       const id = document.getElementById("servicioId").value;
       const tipo = document.getElementById("servicioNombre").value.trim();
       const precio = parseFloat(document.getElementById("servicioPrecio").value);
-
-      if (!tipo || isNaN(precio) || precio <= 0) {
-        alert("Por favor ingresa un nombre y precio válidos.");
-        return;
-      }
+      if (!tipo || isNaN(precio) || precio <= 0) return alert("Datos inválidos.");
 
       let servicios = obtenerServicios();
-
       if (id) {
         servicios = servicios.map(s => s.id == id ? { ...s, tipo, precio } : s);
       } else {
         const nuevoId = servicios.length > 0 ? Math.max(...servicios.map(s => s.id)) + 1 : 1;
         servicios.push({ id: nuevoId, tipo, precio });
       }
-
       localStorage.setItem("servicios_barberia", JSON.stringify(servicios));
       bootstrap.Modal.getInstance(document.getElementById("modalServicio")).hide();
       renderServicios();
     }
 
     function eliminarServicio(id) {
-      if (confirm("¿Estás seguro de eliminar este servicio del menú web?")) {
+      if (confirm("¿Eliminar este servicio?")) {
         let servicios = obtenerServicios().filter(s => s.id !== id);
         localStorage.setItem("servicios_barberia", JSON.stringify(servicios));
         renderServicios();
       }
     }
 
+    // --- GESTIÓN DE BARBEROS ---
+    const BARBEROS_DEFAULT = [
+      { id: 1, nombre: "Tony", foto: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150" },
+      { id: 2, nombre: "Lucas", foto: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150" },
+      { id: 3, nombre: "Matías", foto: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150" },
+      { id: 4, nombre: "Diego", foto: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150" }
+    ];
+
+    function obtenerBarberos() {
+      const data = localStorage.getItem("barberos_barberia");
+      if (!data) {
+        localStorage.setItem("barberos_barberia", JSON.stringify(BARBEROS_DEFAULT));
+        return BARBEROS_DEFAULT;
+      }
+      return JSON.parse(data);
+    }
+
+    function renderBarberos() {
+      const barberos = obtenerBarberos();
+      const tbody = document.getElementById("tablaBarberosBody");
+      tbody.innerHTML = "";
+
+      barberos.forEach((b) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><img src="${b.foto}" alt="${b.nombre}" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;" /></td>
+          <td class="fw-bold">${b.nombre}</td>
+          <td class="text-end">
+            <button class="btn btn-sm btn-outline-warning me-2" onclick="editarBarbero(${b.id})"><i class="bi bi-pencil"></i></button>
+            <button class="btn btn-sm btn-outline-danger" onclick="eliminarBarbero(${b.id})"><i class="bi bi-trash"></i></button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function abrirModalNuevoBarbero() {
+      document.getElementById("modalBarberoTitulo").textContent = "Añadir Nuevo Barbero";
+      document.getElementById("barberoId").value = "";
+      document.getElementById("barberoNombre").value = "";
+      document.getElementById("barberoFoto").value = "";
+    }
+
+    function editarBarbero(id) {
+      const barberos = obtenerBarberos();
+      const b = barberos.find(item => item.id === id);
+      if (!b) return;
+      document.getElementById("modalBarberoTitulo").textContent = "Modificar Barbero";
+      document.getElementById("barberoId").value = b.id;
+      document.getElementById("barberoNombre").value = b.nombre;
+      document.getElementById("barberoFoto").value = b.foto;
+      new bootstrap.Modal(document.getElementById("modalBarbero")).show();
+    }
+
+    function guardarBarbero() {
+      const id = document.getElementById("barberoId").value;
+      const nombre = document.getElementById("barberoNombre").value.trim();
+      const foto = document.getElementById("barberoFoto").value.trim();
+      if (!nombre || !foto) return alert("Completa todos los campos.");
+
+      let barberos = obtenerBarberos();
+      if (id) {
+        barberos = barberos.map(b => b.id == id ? { ...b, nombre, foto } : b);
+      } else {
+        const nuevoId = barberos.length > 0 ? Math.max(...barberos.map(b => b.id)) + 1 : 1;
+        barberos.push({ id: nuevoId, nombre, foto });
+      }
+      localStorage.setItem("barberos_barberia", JSON.stringify(barberos));
+      bootstrap.Modal.getInstance(document.getElementById("modalBarbero")).hide();
+      renderBarberos();
+    }
+
+    function eliminarBarbero(id) {
+      if (confirm("¿Eliminar este barbero?")) {
+        let barberos = obtenerBarberos().filter(b => b.id !== id);
+        localStorage.setItem("barberos_barberia", JSON.stringify(barberos));
+        renderBarberos();
+      }
+    }
+
+    // --- TURNOS ---
     function renderTurnos() {
       const turnos = JSON.parse(localStorage.getItem("turnos_barberia") || "[]");
       const tbody = document.getElementById("tablaTurnosBody");
@@ -268,7 +393,7 @@
       document.getElementById("citasTotal").textContent = turnos.length;
 
       if (turnos.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No hay turnos registrados aún.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No hay turnos registrados aún.</td></tr>';
         document.getElementById("ingresosTotal").textContent = "$0";
         return;
       }
@@ -283,6 +408,7 @@
           <td><span class="text-warning fw-bold">${fechaFormateada}</span></td>
           <td>${t.cliente?.nombre || ""} ${t.cliente?.apellido || ""}</td>
           <td>${t.cliente?.telefono || "—"}</td>
+          <td><span class="badge bg-secondary">${t.barbero || 'General'}</span></td>
           <td>${t.servicio?.tipo || "—"}</td>
           <td>$${Number(precio).toLocaleString("es-CL")}</td>
           <td><span class="badge bg-success bg-opacity-25 text-success border border-success">Confirmado</span></td>
@@ -307,6 +433,7 @@
 
     document.addEventListener("DOMContentLoaded", () => {
       renderServicios();
+      renderBarberos();
       renderTurnos();
     });
   </script>
