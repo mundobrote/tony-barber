@@ -201,6 +201,7 @@
                   <th style="cursor: pointer;" onclick="sortTable('cliente')">
                     Cliente <i class="bi bi-arrow-up-down"></i>
                   </th>
+                  <th>Barbero</th>
                   <th>Servicio</th>
                   <th>Estado</th>
                   <th style="cursor: pointer;" onclick="sortTable('precio')">
@@ -228,7 +229,7 @@
     </div>
 
     <!-- Vista Calendario -->
-    <div id="vista-calendario" class="vista-oculta">
+    <div id="vista-calendario" class="vista-oculta d-none">
       <div class="row">
         <div class="col-lg-8">
           <div class="card card-hover">
@@ -407,19 +408,16 @@
     </div>
   </div>
 
-  <!-- Scripts integrados para funcionamiento autónomo local -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     let turnosManagerLocal = {
       turnosData: [],
       vistaActual: 'lista',
-      turnoSeleccionadoId: null,
 
       init() {
         this.cargarDatos();
         this.poblarSelectServicios();
         this.mostrarTurnos();
-        
         document.getElementById("buscar-turno")?.addEventListener("input", () => this.mostrarTurnos());
       },
 
@@ -434,6 +432,7 @@
           apellido: t.cliente?.apellido || "",
           telefono: t.cliente?.telefono || "",
           email: t.cliente?.email || "",
+          barbero: t.barbero || "General",
           servicio: t.servicio?.tipo || "",
           precio: t.servicio?.precio || 0,
           estado: t.estado || "confirmado"
@@ -457,41 +456,37 @@
         const statsConfirmados = document.getElementById("stats-confirmados");
         const statsPendientes = document.getElementById("stats-pendientes");
         const statsIngresos = document.getElementById("stats-ingresos");
-        const filtroEstado = document.getElementById("filtro-estado")?.value || "todos";
-        const filtroFecha = document.getElementById("filtro-fecha")?.value || "todos";
         const busqueda = document.getElementById("buscar-turno")?.value.toLowerCase() || "";
 
         if (!tbody) return;
         tbody.innerHTML = "";
 
-        let filtrados = this.turnosData.filter(t => {
-          const coincideBusqueda = t.cliente.toLowerCase().includes(busqueda) || t.telefono.includes(busqueda);
-          const coincideEstado = filtroEstado === "todos" || t.estado === filtroEstado;
-          return coincideBusqueda && coincideEstado;
-        });
+        let filtrados = this.turnosData.filter(t => t.cliente.toLowerCase().includes(busqueda) || t.telefono.includes(busqueda));
 
-        statsTotal.textContent = this.turnosData.length;
-        totalTurnos.textContent = `${filtrados.length} turnos`;
+        if (statsTotal) statsTotal.textContent = this.turnosData.length;
+        if (totalTurnos) totalTurnos.textContent = `${filtrados.length} turnos`;
+        
         const confirmados = this.turnosData.filter(t => t.estado === 'confirmado').length;
         const pendientes = this.turnosData.filter(t => t.estado === 'pendiente').length;
         const ingresosHoy = this.turnosData.reduce((acc, t) => acc + t.precio, 0);
 
-        statsConfirmados.textContent = confirmados;
-        statsPendientes.textContent = pendientes;
-        statsIngresos.textContent = `$${ingresosHoy.toLocaleString("es-CL")}`;
+        if (statsConfirmados) statsConfirmados.textContent = confirmados;
+        if (statsPendientes) statsPendientes.textContent = pendientes;
+        if (statsIngresos) statsIngresos.textContent = `$${ingresosHoy.toLocaleString("es-CL")}`;
 
         if (filtrados.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No se encontraron turnos registrados.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No se encontraron turnos registrados.</td></tr>';
           return;
         }
 
         filtrados.forEach(t => {
           const tr = document.createElement("tr");
-          let fechaFmt = t.fecha.split("-").reverse().join("/");
+          let fechaFmt = t.fecha ? t.fecha.split("-").reverse().join("/") : "";
           tr.innerHTML = `
             <td>${fechaFmt}</td>
             <td><strong>${t.hora}</strong></td>
             <td><div>${t.cliente}</div><small class="text-muted">${t.telefono}</small></td>
+            <td><span class="badge bg-secondary">${t.barbero}</span></td>
             <td>${t.servicio}</td>
             <td><span class="badge bg-success">${t.estado}</span></td>
             <td><strong>$${Number(t.precio).toLocaleString("es-CL")}</strong></td>
@@ -509,9 +504,9 @@
           alert("No hay turnos para exportar.");
           return;
         }
-        let csv = "Fecha,Hora,Cliente,Telefono,Servicio,Precio,Estado\n";
+        let csv = "Fecha,Hora,Cliente,Barbero,Servicio,Precio,Estado\n";
         this.turnosData.forEach(t => {
-          csv += `"${t.fecha}","${t.hora}","${t.cliente}","${t.telefono}","${t.servicio}","${t.precio}","${t.estado}"\n`;
+          csv += `"${t.fecha}","${t.hora}","${t.cliente}","${t.barbero}","${t.servicio}","${t.precio}","${t.estado}"\n`;
         });
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
@@ -540,6 +535,7 @@
         vCal.classList.add("d-none");
         bLista.className = "btn btn-primario active";
         bCal.className = "btn btn-secundario";
+        turnosManagerLocal.mostrarTurnos();
       } else {
         vLista.classList.add("d-none");
         vCal.classList.remove("d-none");
@@ -565,9 +561,7 @@
       new bootstrap.Modal(document.getElementById("modalEditarTurno")).show();
     }
 
-    function updatePrecioModal() {
-      // Se ajusta según el servicio seleccionado si se desea
-    }
+    function updatePrecioModal() {}
 
     function guardarEdicionTurnoLocal() {
       const id = parseInt(document.getElementById("editarTurnoId").value);
