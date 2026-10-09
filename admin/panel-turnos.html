@@ -239,7 +239,7 @@
                   <button class="btn btn-sm btn-secondary me-2" onclick="navegarMes(-1)">
                     <i class="bi bi-chevron-left"></i>
                   </button>
-                  <span id="mes-actual" class="me-2">Agosto 2025</span>
+                  <span id="mes-actual" class="me-2">Agosto 2026</span>
                   <button class="btn btn-sm btn-secondary me-2" onclick="navegarMes(1)">
                     <i class="bi bi-chevron-right"></i>
                   </button>
@@ -300,7 +300,7 @@
         <a href="./panel-estadisticas.html" class="btn btn-primario me-3">
           Ver Estadísticas
         </a>
-        <a href="index.html" class="btn btn-secundario">
+        <a href="../index.html" class="btn btn-secundario">
           Volver al Inicio
         </a>
       </div>
@@ -318,248 +318,321 @@
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <!-- Indicador de carga -->
-          <div id="loading-indicator" class="text-center d-none">
-            <div class="spinner-border text-warning" role="status">
-              <span class="visually-hidden">Guardando...</span>
-            </div>
-            <p class="mt-2">Guardando cambios...</p>
-          </div>
-
-          <!-- Alertas de validación -->
-          <div id="validation-alerts"></div>
-
           <form id="formEditarTurno">
             <div class="row mb-3">
               <div class="col-md-6">
-                <label for="editarFecha" class="form-label">
-                  <i class="bi bi-calendar3 me-1"></i>Fecha *
-                </label>
+                <label for="editarFecha" class="form-label">Fecha *</label>
                 <input type="date" class="form-control" id="editarFecha" required>
-                <div class="invalid-feedback">
-                  La fecha es obligatoria y debe ser futura
-                </div>
               </div>
               <div class="col-md-6">
-                <label for="editarHora" class="form-label">
-                  <i class="bi bi-clock me-1"></i>Hora *
-                </label>
+                <label for="editarHora" class="form-label">Hora *</label>
                 <select class="form-select" id="editarHora" required>
                   <option value="">Seleccionar hora</option>
+                  <option value="10:00">10:00</option><option value="11:00">11:00</option>
+                  <option value="12:00">12:00</option><option value="14:00">14:00</option>
+                  <option value="15:00">15:00</option><option value="16:00">16:00</option>
+                  <option value="17:00">17:00</option><option value="18:00">18:00</option>
+                  <option value="19:00">19:00</option><option value="20:00">20:00</option>
                 </select>
-                <div class="invalid-feedback">
-                  Debe seleccionar una hora válida
-                </div>
               </div>
             </div>
             <div class="row mb-3">
               <div class="col-md-6">
-                <label for="editarNombre" class="form-label">
-                  <i class="bi bi-person me-1"></i>Nombre *
-                </label>
-                <input type="text" class="form-control" id="editarNombre" required maxlength="50">
-                <div class="invalid-feedback">
-                  El nombre es obligatorio (máximo 50 caracteres)
-                </div>
+                <label for="editarNombre" class="form-label">Nombre *</label>
+                <input type="text" class="form-control" id="editarNombre" required>
               </div>
               <div class="col-md-6">
-                <label for="editarApellido" class="form-label">
-                  <i class="bi bi-person me-1"></i>Apellido*
-                </label>
-                <input type="text" class="form-control" id="editarApellido" maxlength="50">
+                <label for="editarApellido" class="form-label">Apellido *</label>
+                <input type="text" class="form-control" id="editarApellido" required>
               </div>
             </div>
             <div class="row mb-3">
               <div class="col-md-6">
-                <label for="editarTelefono" class="form-label">
-                  <i class="bi bi-telephone me-1"></i>Teléfono *
-                </label>
-                <input type="tel" class="form-control" id="editarTelefono" required 
-                       pattern="[\d\-\+\(\)\s]+" placeholder="351-123-4567">
-                <div class="invalid-feedback">
-                  El teléfono es obligatorio y debe ser válido
-                </div>
+                <label for="editarTelefono" class="form-label">Teléfono *</label>
+                <input type="tel" class="form-control" id="editarTelefono" required>
               </div>
               <div class="col-md-6">
-                <label for="editarEmail" class="form-label">
-                  <i class="bi bi-envelope me-1"></i>Email*
-                </label>
-                <input type="email" class="form-control" id="editarEmail" 
-                       placeholder="cliente@email.com">
-                <div class="invalid-feedback">
-                  El formato del email no es válido
-                </div>
+                <label for="editarEmail" class="form-label">Email</label>
+                <input type="email" class="form-control" id="editarEmail">
               </div>
             </div>
             <div class="row mb-3">
               <div class="col-md-6">
-                <label for="editarServicio" class="form-label">
-                  <i class="bi bi-scissors me-1"></i>Servicio *
-                </label>
-                <select class="form-select" id="editarServicio" required onchange="updatePrecio()">
+                <label for="editarServicio" class="form-label">Servicio *</label>
+                <select class="form-select" id="editarServicio" required onchange="updatePrecioModal()">
                   <option value="">Seleccionar servicio</option>
                 </select>
-                <div class="invalid-feedback">
-                  Debe seleccionar un servicio
-                </div>
               </div>
               <div class="col-md-6">
-                <label for="editarEstado" class="form-label">
-                  <i class="bi bi-flag me-1"></i>Estado
-                </label>
+                <label for="editarEstado" class="form-label">Estado</label>
                 <select class="form-select" id="editarEstado">
-                  <option value="pendiente">Pendiente</option>
                   <option value="confirmado">Confirmado</option>
+                  <option value="pendiente">Pendiente</option>
                   <option value="cancelado">Cancelado</option>
                 </select>
-              </div>
-            </div>
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <label for="editarPrecio" class="form-label">
-                  <i class="bi bi-currency-dollar me-1"></i>Precio
-                </label>
-                <input type="number" class="form-control" id="editarPrecio" readonly>
-                <div class="form-text">Se actualiza automáticamente según el servicio</div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Vista Previa</label>
-                <div class="card bg-secondary">
-                  <div class="card-body p-2">
-                    <small id="preview-turno" class="text-muted">
-                      Complete los datos para ver la vista previa
-                    </small>
-                  </div>
-                </div>
               </div>
             </div>
             <input type="hidden" id="editarTurnoId">
           </form>
         </div>
         <div class="modal-footer border-warning">
-          <button type="button" class="btn btn-secundario" data-bs-dismiss="modal">
-            <i class="bi bi-x-lg me-1"></i>Cancelar
-          </button>
-          <button type="button" class="btn btn-primario" onclick="guardarEdicionTurno()" id="btnGuardar">
-            <i class="bi bi-check-lg me-1"></i>Guardar Cambios
-          </button>
+          <button type="button" class="btn btn-secundario" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primario" onclick="guardarEdicionTurnoLocal()">Guardar Cambios</button>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Modal de Confirmación -->
-  <div class="modal fade" id="modalConfirmar" tabindex="-1" aria-labelledby="modalConfirmarLabel" aria-hidden="true">
+  <div class="modal fade" id="modalConfirmar" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
-      <div class="modal-content bg-dark border-danger">
+      <div class="modal-content bg-dark border-danger text-white">
         <div class="modal-header border-danger">
-          <h5 class="modal-title text-danger" id="modalConfirmarLabel">
-            <i class="bi bi-exclamation-triangle me-2"></i>Confirmar Acción
-          </h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h5 class="modal-title text-danger">Confirmar Acción</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
-        <div class="modal-body text-white" id="modalConfirmarTexto">
-          ¿Estás seguro de que deseas realizar esta acción?
-        </div>
+        <div class="modal-body" id="modalConfirmarTexto">¿Estás seguro?</div>
         <div class="modal-footer border-danger">
-          <button type="button" class="btn btn-secundario" data-bs-dismiss="modal">
-            <i class="bi bi-x-lg me-1"></i>Cancelar
-          </button>
-          <button type="button" class="btn btn-danger" id="btnConfirmarAccion">
-            <i class="bi bi-check-lg me-1"></i>Confirmar
-          </button>
+          <button type="button" class="btn btn-secundario" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-danger" id="btnConfirmarAccion">Confirmar</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Modal de Búsqueda Avanzada -->
-  <div class="modal fade" id="modalBusquedaAvanzada" tabindex="-1" aria-labelledby="modalBusquedaAvanzadaLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content bg-dark border-info">
-        <div class="modal-header border-info">
-          <h5 class="modal-title text-info" id="modalBusquedaAvanzadaLabel">
-            <i class="bi bi-search me-2"></i>Búsqueda Avanzada
-          </h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <form id="formBusquedaAvanzada">
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <label for="searchFechaDesde" class="form-label">Fecha desde</label>
-                <input type="date" class="form-control" id="searchFechaDesde">
-              </div>
-              <div class="col-md-6">
-                <label for="searchFechaHasta" class="form-label">Fecha hasta</label>
-                <input type="date" class="form-control" id="searchFechaHasta">
-              </div>
-            </div>
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <label for="searchCliente" class="form-label">Cliente</label>
-                <input type="text" class="form-control" id="searchCliente" placeholder="Nombre del cliente">
-              </div>
-              <div class="col-md-6">
-                <label for="searchServicio" class="form-label">Servicio</label>
-                <select class="form-select" id="searchServicio">
-                  <option value="todos">Todos los servicios</option>
-                  <option value="corte">Corte de pelo</option>
-                  <option value="tintura">Tintura</option>
-                  <option value="barba">Perfilado de barba</option>
-                </select>
-              </div>
-            </div>
-            <div class="row mb-3">
-              <div class="col-md-4">
-                <label for="searchPrecioMin" class="form-label">Precio mínimo</label>
-                <input type="number" class="form-control" id="searchPrecioMin" min="0" placeholder="0">
-              </div>
-              <div class="col-md-4">
-                <label for="searchPrecioMax" class="form-label">Precio máximo</label>
-                <input type="number" class="form-control" id="searchPrecioMax" min="0" placeholder="10000">
-              </div>
-              <div class="col-md-4">
-                <label for="searchEstado" class="form-label">Estado</label>
-                <select class="form-select" id="searchEstado">
-                  <option value="todos">Todos los estados</option>
-                  <option value="pendiente">Pendiente</option>
-                  <option value="confirmado">Confirmado</option>
-                  <option value="cancelado">Cancelado</option>
-                </select>
-              </div>
-            </div>
-          </form>
-        </div>
-        <div class="modal-footer border-info">
-          <button type="button" class="btn btn-secundario" onclick="limpiarBusquedaAvanzada()">
-            <i class="bi bi-arrow-clockwise me-1"></i>Limpiar
-          </button>
-          <button type="button" class="btn btn-info" onclick="ejecutarBusquedaAvanzada()">
-            <i class="bi bi-search me-1"></i>Buscar
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Toast para notificaciones -->
+  <!-- Toast de notificaciones -->
   <div class="toast-container position-fixed top-0 end-0 p-3">
-    <div id="notificationToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
-      <div class="toast-header">
-        <i class="bi bi-bell-fill me-2 text-primary"></i>
-        <strong class="me-auto">TH Barber Club</strong>
-        <small class="text-muted">ahora</small>
-        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-      </div>
-      <div class="toast-body" id="toastMessage">
-        Mensaje de notificación
-      </div>
+    <div id="notificationToast" class="toast text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="toast-body" id="toastMessage">Operación exitosa</div>
     </div>
   </div>
 
-  <!-- Scripts -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q" crossorigin="anonymous"></script>
-  <script src="../js/panel-turnos.js" type="module"></script>
+  <!-- Scripts integrados para funcionamiento autónomo local -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    let turnosManagerLocal = {
+      turnosData: [],
+      vistaActual: 'lista',
+      turnoSeleccionadoId: null,
+
+      init() {
+        this.cargarDatos();
+        this.poblarSelectServicios();
+        this.mostrarTurnos();
+        
+        document.getElementById("buscar-turno")?.addEventListener("input", () => this.mostrarTurnos());
+      },
+
+      cargarDatos() {
+        const brutos = JSON.parse(localStorage.getItem("turnos_barberia") || "[]");
+        this.turnosData = brutos.map(t => ({
+          id: t.id,
+          fecha: t.fechaHora ? t.fechaHora.split("T")[0] : "",
+          hora: t.fechaHora ? t.fechaHora.split("T")[1] : "",
+          cliente: `${t.cliente?.nombre || ""} ${t.cliente?.apellido || ""}`.trim(),
+          nombre: t.cliente?.nombre || "",
+          apellido: t.cliente?.apellido || "",
+          telefono: t.cliente?.telefono || "",
+          email: t.cliente?.email || "",
+          servicio: t.servicio?.tipo || "",
+          precio: t.servicio?.precio || 0,
+          estado: t.estado || "confirmado"
+        }));
+      },
+
+      poblarSelectServicios() {
+        const servicios = JSON.parse(localStorage.getItem("servicios_barberia") || "[]");
+        const select = document.getElementById("editarServicio");
+        if (!select) return;
+        select.innerHTML = '<option value="">Seleccionar servicio</option>';
+        servicios.forEach(s => {
+          select.innerHTML += `<option value="${s.tipo}" data-precio="${s.precio}">${s.tipo} — $${s.precio}</option>`;
+        });
+      },
+
+      mostrarTurnos() {
+        const tbody = document.getElementById("tabla-turnos");
+        const totalTurnos = document.getElementById("total-turnos");
+        const statsTotal = document.getElementById("stats-total");
+        const statsConfirmados = document.getElementById("stats-confirmados");
+        const statsPendientes = document.getElementById("stats-pendientes");
+        const statsIngresos = document.getElementById("stats-ingresos");
+        const filtroEstado = document.getElementById("filtro-estado")?.value || "todos";
+        const filtroFecha = document.getElementById("filtro-fecha")?.value || "todos";
+        const busqueda = document.getElementById("buscar-turno")?.value.toLowerCase() || "";
+
+        if (!tbody) return;
+        tbody.innerHTML = "";
+
+        let filtrados = this.turnosData.filter(t => {
+          const coincideBusqueda = t.cliente.toLowerCase().includes(busqueda) || t.telefono.includes(busqueda);
+          const coincideEstado = filtroEstado === "todos" || t.estado === filtroEstado;
+          return coincideBusqueda && coincideEstado;
+        });
+
+        statsTotal.textContent = this.turnosData.length;
+        totalTurnos.textContent = `${filtrados.length} turnos`;
+        const confirmados = this.turnosData.filter(t => t.estado === 'confirmado').length;
+        const pendientes = this.turnosData.filter(t => t.estado === 'pendiente').length;
+        const ingresosHoy = this.turnosData.reduce((acc, t) => acc + t.precio, 0);
+
+        statsConfirmados.textContent = confirmados;
+        statsPendientes.textContent = pendientes;
+        statsIngresos.textContent = `$${ingresosHoy.toLocaleString("es-CL")}`;
+
+        if (filtrados.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No se encontraron turnos registrados.</td></tr>';
+          return;
+        }
+
+        filtrados.forEach(t => {
+          const tr = document.createElement("tr");
+          let fechaFmt = t.fecha.split("-").reverse().join("/");
+          tr.innerHTML = `
+            <td>${fechaFmt}</td>
+            <td><strong>${t.hora}</strong></td>
+            <td><div>${t.cliente}</div><small class="text-muted">${t.telefono}</small></td>
+            <td>${t.servicio}</td>
+            <td><span class="badge bg-success">${t.estado}</span></td>
+            <td><strong>$${Number(t.precio).toLocaleString("es-CL")}</strong></td>
+            <td>
+              <button class="btn btn-outline-warning btn-sm me-1" onclick="abrirEditarTurno(${t.id})"><i class="bi bi-pencil"></i></button>
+              <button class="btn btn-outline-danger btn-sm" onclick="eliminarTurnoLocal(${t.id})"><i class="bi bi-trash"></i></button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      },
+
+      exportToCSV() {
+        if (this.turnosData.length === 0) {
+          alert("No hay turnos para exportar.");
+          return;
+        }
+        let csv = "Fecha,Hora,Cliente,Telefono,Servicio,Precio,Estado\n";
+        this.turnosData.forEach(t => {
+          csv += `"${t.fecha}","${t.hora}","${t.cliente}","${t.telefono}","${t.servicio}","${t.precio}","${t.estado}"\n`;
+        });
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "turnos_barberia.csv";
+        a.click();
+      },
+
+      refreshData() {
+        this.cargarDatos();
+        this.mostrarTurnos();
+        showToast("Datos actualizados correctamente.");
+      }
+    };
+
+    function cambiarVista(vista) {
+      turnosManagerLocal.vistaActual = vista;
+      const vLista = document.getElementById("vista-lista");
+      const vCal = document.getElementById("vista-calendario");
+      const bLista = document.getElementById("btn-lista");
+      const bCal = document.getElementById("btn-calendario");
+
+      if (vista === 'lista') {
+        vLista.classList.remove("d-none");
+        vCal.classList.add("d-none");
+        bLista.className = "btn btn-primario active";
+        bCal.className = "btn btn-secundario";
+      } else {
+        vLista.classList.add("d-none");
+        vCal.classList.remove("d-none");
+        bCal.className = "btn btn-primario active";
+        bLista.className = "btn btn-secundario";
+      }
+    }
+
+    function abrirEditarTurno(id) {
+      const turno = turnosManagerLocal.turnosData.find(t => t.id === id);
+      if (!turno) return;
+
+      document.getElementById("editarTurnoId").value = turno.id;
+      document.getElementById("editarFecha").value = turno.fecha;
+      document.getElementById("editarHora").value = turno.hora;
+      document.getElementById("editarNombre").value = turno.nombre;
+      document.getElementById("editarApellido").value = turno.apellido;
+      document.getElementById("editarTelefono").value = turno.telefono;
+      document.getElementById("editarEmail").value = turno.email;
+      document.getElementById("editarServicio").value = turno.servicio;
+      document.getElementById("editarEstado").value = turno.estado;
+
+      new bootstrap.Modal(document.getElementById("modalEditarTurno")).show();
+    }
+
+    function updatePrecioModal() {
+      // Se ajusta según el servicio seleccionado si se desea
+    }
+
+    function guardarEdicionTurnoLocal() {
+      const id = parseInt(document.getElementById("editarTurnoId").value);
+      const fecha = document.getElementById("editarFecha").value;
+      const hora = document.getElementById("editarHora").value;
+      const nombre = document.getElementById("editarNombre").value;
+      const apellido = document.getElementById("editarApellido").value;
+      const telefono = document.getElementById("editarTelefono").value;
+      const email = document.getElementById("editarEmail").value;
+      const servicioTipo = document.getElementById("editarServicio").value;
+      const estado = document.getElementById("editarEstado").value;
+
+      const selectServicio = document.getElementById("editarServicio");
+      const precio = parseFloat(selectServicio.selectedOptions[0]?.dataset?.precio || 10000);
+
+      let turnosRaw = JSON.parse(localStorage.getItem("turnos_barberia") || "[]");
+      turnosRaw = turnosRaw.map(t => {
+        if (t.id === id) {
+          return {
+            ...t,
+            fechaHora: `${fecha}T${hora}`,
+            cliente: { nombre, apellido, telefono, email },
+            servicio: { ...t.servicio, tipo: servicioTipo, precio },
+            estado
+          };
+        }
+        return t;
+      });
+
+      localStorage.setItem("turnos_barberia", JSON.stringify(turnosRaw));
+      bootstrap.Modal.getInstance(document.getElementById("modalEditarTurno")).hide();
+      turnosManagerLocal.init();
+      showToast("Turno actualizado con éxito.");
+    }
+
+    function eliminarTurnoLocal(id) {
+      if (confirm("¿Estás seguro de eliminar este turno?")) {
+        let turnosRaw = JSON.parse(localStorage.getItem("turnos_barberia") || "[]");
+        turnosRaw = turnosRaw.filter(t => t.id !== id);
+        localStorage.setItem("turnos_barberia", JSON.stringify(turnosRaw));
+        turnosManagerLocal.init();
+        showToast("Turno eliminado.");
+      }
+    }
+
+    function limpiarFiltros() {
+      document.getElementById("buscar-turno").value = "";
+      document.getElementById("filtro-estado").value = "todos";
+      document.getElementById("filtro-fecha").value = "todos";
+      turnosManagerLocal.mostrarTurnos();
+    }
+
+    function toggleAdvancedFilters() {
+      document.getElementById("advanced-filters").classList.toggle("d-none");
+    }
+
+    function showToast(msg) {
+      const toastEl = document.getElementById("notificationToast");
+      document.getElementById("toastMessage").textContent = msg;
+      new bootstrap.Toast(toastEl).show();
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      turnosManagerLocal.init();
+    });
+  </script>
 </body>
 </html>
