@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reservar Turno | TH Barber Club</title>
+  <link rel="icon" href="./img/logo.svg" type="image/x-icon" />
+  <link rel="stylesheet" href="./css/styles.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" />
+</head>
+<body class="page-booking">
+
+  <!-- 1. Fondo Global Fijo con Overlay Unificado -->
+  <div class="global-bg-fixed" aria-hidden="true">
+    <img src="./img/fotofondo.jpg" alt="Fondo TH Barber Club" class="global-bg-img" />
+    <div class="global-bg-overlay"></div>
+  </div>
+
+  <!-- 2. Botón Volver Flotante Superior -->
+  <header class="booking-top-nav">
+    <a href="index.html" class="btn-back-floating">
+      <i class="bi bi-chevron-left"></i>
+      <span>Volver al Inicio</span>
+    </a>
+  </header>
+
+  <!-- 3. Tarjeta Centralizada de Reserva (Glassmorphism) -->
+  <main class="booking-wrapper">
+    <section class="glass-booking-card">
+      
+      <!-- Logo centrado y títulos -->
+      <div class="booking-card-header">
+        <a href="index.html">
+          <img src="./img/logo.svg" alt="TH Barber Club" class="card-logo" />
+        </a>
+        <div class="tag-pill">Agenda Online</div>
+        <h1 class="card-title">¡Reserva tu turno!</h1>
+        <p class="card-subtitle">Selecciona el servicio y horario de tu preferencia.</p>
+      </div>
+
+      <!-- Formulario Multi-pasos -->
+      <form id="form-turno" autocomplete="off" onsubmit="return false;">
+        
+        <!-- ===== PASO 1: SERVICIO ===== -->
+        <div class="seccion activa form-step" id="paso-1">
+          <div class="form-group-lux">
+            <label for="servicio" class="label-lux">Servicio *</label>
+            <div class="select-wrapper">
+              <select class="input-lux select-lux" id="servicio" required>
+                <option value="">-- Selecciona un servicio --</option>
+                <option value="1" data-precio="10000">Corte Clásico / Tradicional — $10.000</option>
+                <option value="2" data-precio="7000">Perfilado & Afeitado de Barba — $7.000</option>
+                <option value="3" data-precio="15000">Combo Corte + Barba Completo — $15.000</option>
+                <option value="4" data-precio="8000">Corte Infantil / Escolar — $8.000</option>
+                <option value="5" data-precio="18000">Tintura / Camuflaje de Canas — $18.000</option>
+                <option value="6" data-precio="25000">Corte VIP a Domicilio — $25.000</option>
+              </select>
+            </div>
+          </div>
+          
+          <button type="button" class="btn-lux-primary w-100" onclick="siguientePaso(1)">
+            Siguiente <i class="bi bi-arrow-right ms-1"></i>
+          </button>
+        </div>
+
+        <!-- ===== PASO 2: FECHA Y HORA ===== -->
+        <div class="seccion form-step" id="paso-2">
+          <div class="form-group-lux">
+            <label for="fecha" class="label-lux">Fecha *</label>
+            <input type="date" class="input-lux input-date-lux" id="fecha" required onchange="cargarHorariosDisponibles()" />
+          </div>
+
+          <div class="form-group-lux">
+            <label class="label-lux">Horarios Disponibles *</label>
+            <div id="horarios" class="horarios-container">
+              <span class="horarios-hint">Elige una fecha para ver horarios disponibles.</span>
+            </div>
+          </div>
+
+          <div class="btn-group-lux">
+            <button type="button" class="btn-lux-outline" onclick="volverPaso(1)">
+              <i class="bi bi-arrow-left me-1"></i> Atrás
+            </button>
+            <button type="button" class="btn-lux-primary flex-1" onclick="siguientePaso(2)">
+              Siguiente <i class="bi bi-arrow-right ms-1"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- ===== PASO 3: DATOS PERSONALES ===== -->
+        <div class="seccion form-step" id="paso-3">
+          <div class="form-row-lux">
+            <div class="form-group-lux">
+              <label for="nombre" class="label-lux">Nombre *</label>
+              <input type="text" class="input-lux" id="nombre" placeholder="Tu nombre" required />
+            </div>
+            <div class="form-group-lux">
+              <label for="apellido" class="label-lux">Apellido *</label>
+              <input type="text" class="input-lux" id="apellido" placeholder="Tu apellido" required />
+            </div>
+          </div>
+
+          <div class="form-row-lux">
+            <div class="form-group-lux">
+              <label for="telefono" class="label-lux">Teléfono *</label>
+              <input type="tel" class="input-lux" id="telefono" placeholder="9 8412 0788" required />
+            </div>
+            <div class="form-group-lux">
+              <label for="email" class="label-lux">Correo Electrónico *</label>
+              <input type="email" class="input-lux" id="email" placeholder="correo@ejemplo.com" required />
+            </div>
+          </div>
+
+          <div class="btn-group-lux">
+            <button type="button" class="btn-lux-outline" onclick="volverPaso(2)">
+              <i class="bi bi-arrow-left me-1"></i> Atrás
+            </button>
+            <button type="button" class="btn-lux-primary flex-1" onclick="enviarForm()">
+              Confirmar Reserva <i class="bi bi-check2-circle ms-1"></i>
+            </button>
+          </div>
+        </div>
+
+      </form>
+    </section>
+  </main>
+
+  <script src="./js/scripts.js"></script>
+</body>
+</html>

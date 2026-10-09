@@ -1,0 +1,75 @@
+:root {
+  --color-primario: #ff6600;
+  --color-secundario: #212529;
+  --fondo-oscuro: #121212;
+}
+
+body {
+  background-color: var(--fondo-oscuro);
+  color: #ffffff;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  min-height: 100vh;
+}
+
+/* Botones personalizados */
+.btn-primario {
+  background-color: var(--color-primario);
+  color: #ffffff;
+  font-weight: 600;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+  transition: 0.3s;
+}
+
+.btn-primario:hover {
+  background-color: #e65c00;
+  color: #ffffff;
+}
+
+.btn-secundario {
+  background-color: transparent;
+  border: 2px solid #ffffff;
+  color: #ffffff;
+  font-weight: 600;
+  padding: 8px 20px;
+  border-radius: 8px;
+  transition: 0.3s;
+}
+
+.btn-secundario:hover {
+  background-color: #ffffff;
+  color: var(--fondo-oscuro);
+}
+
+/* Control de secciones por pasos del formulario */
+.form-section {
+  display: none;
+}
+
+.form-section.activa {
+  display: block;
+  animation: fadeIn 0.4s ease-in-out;
+}
+
+/* Botones de selección de horarios */
+.horario-btn {
+  background-color: #2a2a2a;
+  border: 1px solid #444;
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.horario-btn.activo, .horario-btn:hover {
+  background-color: var(--color-primario);
+  border-color: var(--color-primario);
+  color: #fff;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
